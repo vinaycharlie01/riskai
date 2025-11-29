@@ -6,7 +6,7 @@ from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from masumi.config import Config
 from masumi.payment import Payment, Amount
-from crew_definition import ResearchCrew
+from risk_analysis_crew import RiskAnalysisCrew
 from logging_config import setup_logging
 
 # Configure logging
@@ -26,8 +26,8 @@ logger.info(f"PAYMENT_SERVICE_URL: {PAYMENT_SERVICE_URL}")
 
 # Initialize FastAPI
 app = FastAPI(
-    title="API following the Masumi API Standard",
-    description="API for running Agentic Services tasks with Masumi payment integration",
+    title="RiskLens AI - Blockchain Compliance & Risk Scoring Agent",
+    description="AI-powered compliance and risk scoring agent for blockchain wallets. Analyzes transactions, detects suspicious patterns, and generates on-chain compliance reports.",
     version="1.0.0"
 )
 
@@ -55,9 +55,9 @@ class StartJobRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "identifier_from_purchaser": "example_purchaser_123",
+                "identifier_from_purchaser": "exchange_kyc_check_001",
                 "input_data": {
-                    "text": "Write a story about a robot learning to paint"
+                    "wallet_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
                 }
             }
         }
@@ -68,13 +68,16 @@ class ProvideInputRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 # CrewAI Task Execution
 # ─────────────────────────────────────────────────────────────────────────────
-async def execute_crew_task(input_data: str) -> str:
-    """ Execute a CrewAI task with Research and Writing Agents """
-    logger.info(f"Starting CrewAI task with input: {input_data}")
-    crew = ResearchCrew(logger=logger)
-    inputs = {"text": input_data}
+async def execute_crew_task(input_data: dict) -> str:
+    """ Execute RiskLens AI analysis for wallet compliance and risk scoring """
+    wallet_address = input_data.get("wallet_address", "")
+    logger.info(f"Starting RiskLens AI analysis for wallet: {wallet_address}")
+    
+    crew = RiskAnalysisCrew(logger=logger)
+    inputs = {"wallet_address": wallet_address}
     result = crew.crew.kickoff(inputs)
-    logger.info("CrewAI task completed successfully")
+    
+    logger.info("RiskLens AI analysis completed successfully")
     return result
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -89,10 +92,9 @@ async def start_job(data: StartJobRequest):
         job_id = str(uuid.uuid4())
         agent_identifier = os.getenv("AGENT_IDENTIFIER")
         
-        # Log the input text (truncate if too long)
-        input_text = data.input_data["text"]
-        truncated_input = input_text[:100] + "..." if len(input_text) > 100 else input_text
-        logger.info(f"Received job request with input: '{truncated_input}'")
+        # Log the wallet address
+        wallet_address = data.input_data.get("wallet_address", "")
+        logger.info(f"Received risk analysis request for wallet: {wallet_address}")
         logger.info(f"Starting job {job_id} with agent {agent_identifier}")
 
         # Define payment amounts
@@ -255,10 +257,19 @@ async def get_status(job_id: str):
 @app.get("/availability")
 async def check_availability():
     """ Checks if the server is operational """
-
-    return {"status": "available", "type": "masumi-agent", "message": "Server operational."}
-    # Commented out for simplicity sake but its recommended to include the agentIdentifier
-    #return {"status": "available","agentIdentifier": os.getenv("AGENT_IDENTIFIER"), "message": "The server is running smoothly."}
+    agent_identifier = os.getenv("AGENT_IDENTIFIER")
+    
+    if not agent_identifier:
+        logger.error("AGENT_IDENTIFIER environment variable is not set!")
+        raise HTTPException(status_code=500, detail="Agent identifier not configured")
+    
+    logger.info(f"Availability check - Agent Identifier: {agent_identifier}")
+    return {
+        "status": "available",
+        "type": "masumi-agent",
+        "agentIdentifier": agent_identifier,
+        "message": "Server operational."
+    }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5) Retrieve Input Schema (MIP-003: /input_schema)
@@ -272,12 +283,12 @@ async def input_schema():
     return {
         "input_data": [
             {
-                "id": "text",
+                "id": "wallet_address",
                 "type": "string",
-                "name": "Task Description",
+                "name": "Wallet Address",
                 "data": {
-                    "description": "The text input for the AI task",
-                    "placeholder": "Enter your task description here"
+                    "description": "The blockchain wallet address to analyze for compliance and risk assessment",
+                    "placeholder": "Enter wallet address (e.g., 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb)"
                 }
             }
         ]
@@ -299,28 +310,28 @@ async def health():
 # Main Logic if Called as a Script
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
-    """Run the standalone agent flow without the API"""
+    """Run the standalone RiskLens AI agent flow without the API"""
     import os
     # Disable execution traces to avoid terminal issues
     os.environ['CREWAI_DISABLE_TELEMETRY'] = 'true'
     
     print("\n" + "=" * 70)
-    print("🚀 Running CrewAI agents locally (standalone mode)...")
+    print("🚀 Running RiskLens AI locally (standalone mode)...")
     print("=" * 70 + "\n")
     
-    # Define test input
-    input_data = {"text": "The impact of AI on the job market"}
+    # Define test input - sample wallet address
+    input_data = {"wallet_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"}
     
-    print(f"Input: {input_data['text']}")
-    print("\nProcessing with CrewAI agents...\n")
+    print(f"Analyzing Wallet: {input_data['wallet_address']}")
+    print("\nProcessing with RiskLens AI agents...\n")
     
     # Initialize and run the crew
-    crew = ResearchCrew(verbose=True)
+    crew = RiskAnalysisCrew(verbose=True)
     result = crew.crew.kickoff(inputs=input_data)
     
     # Display the result
     print("\n" + "=" * 70)
-    print("✅ Crew Output:")
+    print("✅ Risk Analysis Report:")
     print("=" * 70 + "\n")
     print(result)
     print("\n" + "=" * 70 + "\n")

@@ -59,6 +59,11 @@ spec:
                 secretKeyRef:
                   name: masumi-secrets
                   key: openai_api_key
+            - name: BLOCKFROST_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: blockfrost_project_id
           resources:
             requests:
               memory: "512Mi"
