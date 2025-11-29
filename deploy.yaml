@@ -1,0 +1,148 @@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-api
+  labels:
+    app: python-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-api
+  template:
+    metadata:
+      labels:
+        app: python-api
+    spec:
+      containers:
+        - name: python-api
+          image: ghcr.io/vinaycharlie01/local-llama-agent-python:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            # API Configuration
+            - name: API_HOST
+              value: "0.0.0.0"
+            - name: API_PORT
+              value: "8000"
+            # Masumi Configuration
+            - name: PAYMENT_SERVICE_URL
+              value: "https://masumi-payment-service-production-755f.up.railway.app/api/v1"
+            - name: NETWORK
+              value: "Preprod"
+            - name: PAYMENT_AMOUNT
+              value: "1000000"
+            - name: PAYMENT_UNIT
+              value: "16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde0014df10745553444d"
+            # Secrets from Secret resource
+            - name: PAYMENT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: payment_api_key
+            - name: AGENT_IDENTIFIER
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: agent_identifier
+            - name: SELLER_VKEY
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: seller_vkey
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: openai_api_key
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /availability
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: ghcr-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-api
+  labels:
+    app: python-api
+spec:
+  type: ClusterIP
+  selector:
+    app: python-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: vinay@example.com  # Update with your email
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: python-api-ingress
+  annotations:
+    cert-manager.io/issuer: "letsencrypt-prod"
+    # Disable SSL redirect to allow HTTP-01 challenge
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: 161.156.165.133.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: python-api
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - 161.156.165.133.nip.io
+      secretName: python-api-tls
+
+# Made with Bob

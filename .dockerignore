@@ -1,0 +1,23 @@
+# Ignore environment files
+.env
+*.env
+.env.example
+# Node.js / React
+node_modules
+npm-debug.log
+yarn-error.log
+dist
+build
+
+# Python
+__pycache__/
+*.pyc
+
+# Go
+bin/
+vendor/
+
+# Docker / Git
+.dockerignore
+.git
+.gitignore
