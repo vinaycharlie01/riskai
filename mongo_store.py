@@ -1,0 +1,125 @@
+import os
+from typing import Optional, Dict, Any
+from motor.motor_asyncio import AsyncIOMotorClient
+from logging_config import setup_logging
+
+logger = setup_logging()
+
+class MongoStore:
+    """MongoDB-based job storage for distributed deployment"""
+    
+    def __init__(self):
+        mongo_host = os.getenv("MONGO_HOST", "mongodb")
+        mongo_port = int(os.getenv("MONGO_PORT", "27017"))
+        mongo_db = os.getenv("MONGO_DB", "risklens")
+        mongo_user = os.getenv("MONGO_USER", "")
+        mongo_password = os.getenv("MONGO_PASSWORD", "")
+        
+        # Build connection string
+        if mongo_user and mongo_password:
+            self.mongo_uri = f"mongodb://{mongo_user}:{mongo_password}@{mongo_host}:{mongo_port}"
+        else:
+            self.mongo_uri = f"mongodb://{mongo_host}:{mongo_port}"
+        
+        self.mongo_db = mongo_db
+        self.client: Optional[AsyncIOMotorClient] = None
+        self.db = None
+        self.jobs_collection = None
+        
+    async def connect(self):
+        """Connect to MongoDB"""
+        try:
+            self.client = AsyncIOMotorClient(
+                self.mongo_uri,
+                serverSelectionTimeoutMS=5000
+            )
+            # Test connection
+            await self.client.admin.command('ping')
+            
+            self.db = self.client[self.mongo_db]
+            self.jobs_collection = self.db.jobs
+            
+            # Create indexes for better performance
+            await self.jobs_collection.create_index("job_id", unique=True)
+            await self.jobs_collection.create_index("status")
+            await self.jobs_collection.create_index("blockchain_identifier")
+            
+            logger.info(f"✅ Connected to MongoDB at {self.mongo_uri}")
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to MongoDB: {str(e)}")
+            raise
+    
+    async def disconnect(self):
+        """Disconnect from MongoDB"""
+        if self.client:
+            self.client.close()
+            logger.info("Disconnected from MongoDB")
+    
+    async def set_job(self, job_id: str, job_data: Dict[str, Any]):
+        """Store job data in MongoDB"""
+        try:
+            job_doc = {
+                "job_id": job_id,
+                **job_data
+            }
+            await self.jobs_collection.insert_one(job_doc)
+            logger.info(f"Stored job {job_id} in MongoDB")
+        except Exception as e:
+            logger.error(f"Failed to store job {job_id}: {str(e)}")
+            raise
+    
+    async def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve job data from MongoDB"""
+        try:
+            job_doc = await self.jobs_collection.find_one({"job_id": job_id})
+            if job_doc:
+                # Remove MongoDB's _id field
+                job_doc.pop('_id', None)
+                job_doc.pop('job_id', None)  # Remove duplicate job_id
+                return job_doc
+            return None
+        except Exception as e:
+            logger.error(f"Failed to retrieve job {job_id}: {str(e)}")
+            return None
+    
+    async def update_job(self, job_id: str, updates: Dict[str, Any]):
+        """Update specific fields in job data"""
+        try:
+            result = await self.jobs_collection.update_one(
+                {"job_id": job_id},
+                {"$set": updates}
+            )
+            if result.modified_count > 0:
+                logger.info(f"Updated job {job_id} in MongoDB")
+            else:
+                logger.warning(f"Job {job_id} not found for update")
+        except Exception as e:
+            logger.error(f"Failed to update job {job_id}: {str(e)}")
+            raise
+    
+    async def delete_job(self, job_id: str):
+        """Delete job data from MongoDB"""
+        try:
+            await self.jobs_collection.delete_one({"job_id": job_id})
+            logger.info(f"Deleted job {job_id} from MongoDB")
+        except Exception as e:
+            logger.error(f"Failed to delete job {job_id}: {str(e)}")
+    
+    async def get_all_jobs(self, status: Optional[str] = None) -> list:
+        """Get all jobs, optionally filtered by status"""
+        try:
+            query = {"status": status} if status else {}
+            cursor = self.jobs_collection.find(query)
+            jobs = await cursor.to_list(length=100)
+            # Remove MongoDB _id field
+            for job in jobs:
+                job.pop('_id', None)
+            return jobs
+        except Exception as e:
+            logger.error(f"Failed to retrieve jobs: {str(e)}")
+            return []
+
+# Global MongoDB store instance
+mongo_store = MongoStore()
+
+# Made with Bob

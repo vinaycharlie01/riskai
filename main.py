@@ -1,13 +1,15 @@
 import os
 import uvicorn
 import uuid
+import json
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from masumi.config import Config
-from masumi.payment import Payment, Amount
+from masumi.payment import Payment
 from risk_analysis_crew import RiskAnalysisCrew
 from logging_config import setup_logging
+from mongo_store import mongo_store
 
 # Configure logging
 logger = setup_logging()
@@ -32,10 +34,22 @@ app = FastAPI(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Temporary in-memory job store (DO NOT USE IN PRODUCTION)
+# MongoDB-based distributed job store
 # ─────────────────────────────────────────────────────────────────────────────
-jobs = {}
+# Payment instances stored in memory per pod (monitoring is pod-local)
 payment_instances = {}
+
+@app.on_event("startup")
+async def startup_event():
+    """Connect to MongoDB on startup"""
+    await mongo_store.connect()
+    logger.info("✅ Application started with MongoDB support")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Disconnect from MongoDB on shutdown"""
+    await mongo_store.disconnect()
+    logger.info("Application shutdown complete")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Initialize Masumi Payment Config
@@ -68,7 +82,7 @@ class ProvideInputRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 # CrewAI Task Execution
 # ─────────────────────────────────────────────────────────────────────────────
-async def execute_crew_task(input_data: dict) -> str:
+async def execute_crew_task(input_data: dict) -> dict:
     """ Execute RiskLens AI analysis for wallet compliance and risk scoring """
     wallet_address = input_data.get("wallet_address", "")
     logger.info(f"Starting RiskLens AI analysis for wallet: {wallet_address}")
@@ -78,7 +92,17 @@ async def execute_crew_task(input_data: dict) -> str:
     result = crew.crew.kickoff(inputs)
     
     logger.info("RiskLens AI analysis completed successfully")
-    return result
+    
+    # Extract the raw result (which should be a JSON string from the Compliance Reporter)
+    result_raw = result.raw if hasattr(result, "raw") else str(result)
+    
+    # Try to parse as JSON, if it fails, return as plain text
+    try:
+        result_dict = json.loads(result_raw)
+        return result_dict
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("Result is not valid JSON, returning as text")
+        return {"result": result_raw}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Start Job (MIP-003: /start_job)
@@ -86,8 +110,8 @@ async def execute_crew_task(input_data: dict) -> str:
 @app.post("/start_job")
 async def start_job(data: StartJobRequest):
     """ Initiates a job and creates a payment request """
-    print(f"Received data: {data}")
-    print(f"Received data.input_data: {data.input_data}")
+    logger.info(f"Received start_job request")
+    logger.info(f"Input data: {data.input_data}")
     try:
         job_id = str(uuid.uuid4())
         agent_identifier = os.getenv("AGENT_IDENTIFIER")
@@ -97,31 +121,24 @@ async def start_job(data: StartJobRequest):
         logger.info(f"Received risk analysis request for wallet: {wallet_address}")
         logger.info(f"Starting job {job_id} with agent {agent_identifier}")
 
-        # Define payment amounts
-        payment_amount = os.getenv("PAYMENT_AMOUNT", "10000000")  # Default 10 ADA
-        payment_unit = os.getenv("PAYMENT_UNIT", "lovelace") # Default lovelace
-
-        amounts = [Amount(amount=payment_amount, unit=payment_unit)]
-        logger.info(f"Using payment amount: {payment_amount} {payment_unit}")
-        
         # Create a payment request using Masumi
+        # Note: Payment amount is configured at agent registration level
         payment = Payment(
             agent_identifier=agent_identifier,
-            #amounts=amounts,
             config=config,
             identifier_from_purchaser=data.identifier_from_purchaser,
             input_data=data.input_data,
             network=NETWORK
         )
         
-        logger.info("Creating payment request...")
+        logger.info(f"Creating payment request for agent: {agent_identifier}")
         payment_request = await payment.create_payment_request()
         blockchain_identifier = payment_request["data"]["blockchainIdentifier"]
         payment.payment_ids.add(blockchain_identifier)
         logger.info(f"Created payment request with blockchain identifier: {blockchain_identifier}")
 
-        # Store job info (Awaiting payment)
-        jobs[job_id] = {
+        # Store job info in MongoDB (Awaiting payment)
+        job_data = {
             "status": "awaiting_payment",
             "payment_status": "pending",
             "blockchain_identifier": blockchain_identifier,
@@ -129,13 +146,16 @@ async def start_job(data: StartJobRequest):
             "result": None,
             "identifier_from_purchaser": data.identifier_from_purchaser
         }
+        await mongo_store.set_job(job_id, job_data)
 
         async def payment_callback(blockchain_identifier: str):
+            logger.info(f"🔔 Payment callback triggered for job {job_id}, payment {blockchain_identifier}")
             await handle_payment_status(job_id, blockchain_identifier)
 
-        # Start monitoring the payment status
+        # Start monitoring the payment status (pod-local)
         payment_instances[job_id] = payment
         logger.info(f"Starting payment status monitoring for job {job_id}")
+        logger.info(f"Monitoring payment ID: {blockchain_identifier}")
         await payment.start_status_monitoring(payment_callback)
 
         # Return the response in the required format
@@ -149,7 +169,6 @@ async def start_job(data: StartJobRequest):
             "agentIdentifier": agent_identifier,
             "sellerVKey": os.getenv("SELLER_VKEY"),
             "identifierFromPurchaser": data.identifier_from_purchaser,
-            "amounts": amounts,
             "input_hash": payment.input_hash,
             "payByTime": payment_request["data"]["payByTime"],
         }
@@ -172,39 +191,98 @@ async def start_job(data: StartJobRequest):
 async def handle_payment_status(job_id: str, payment_id: str) -> None:
     """ Executes CrewAI task after payment confirmation """
     try:
-        logger.info(f"Payment {payment_id} completed for job {job_id}, executing task...")
+        logger.info(f"=" * 70)
+        logger.info(f"🎯 PAYMENT CALLBACK TRIGGERED")
+        logger.info(f"Job ID: {job_id}")
+        logger.info(f"Payment ID: {payment_id}")
+        logger.info(f"=" * 70)
+        
+        # Check if job exists in MongoDB
+        job = await mongo_store.get_job(job_id)
+        if not job:
+            logger.error(f"❌ Job {job_id} not found in MongoDB!")
+            return
+        
+        logger.info(f"✅ Job found, starting AI analysis...")
         
         # Update job status to running
-        jobs[job_id]["status"] = "running"
-        logger.info(f"Input data: {jobs[job_id]["input_data"]}")
+        await mongo_store.update_job(job_id, {
+            "status": "running",
+            "payment_status": "paid"
+        })
+        logger.info(f"Input data: {job['input_data']}")
 
         # Execute the AI task
-        result = await execute_crew_task(jobs[job_id]["input_data"])
-        print(f"Result: {result}")
-        logger.info(f"Crew task completed for job {job_id}")
+        logger.info(f"🤖 Starting CrewAI analysis...")
+        result_dict = await execute_crew_task(job["input_data"])
+        logger.info(f"✅ Crew task completed for job {job_id}")
         
-        # Convert result to string for payment completion
-        # Check if result has .raw attribute (CrewOutput), otherwise convert to string
-        result_string = result.raw if hasattr(result, "raw") else str(result)
+        # Convert result dict to JSON string for Masumi
+        result_string = json.dumps(result_dict, indent=2)
         
-        # Mark payment as completed on Masumi
-        # Use a shorter string for the result hash
-        await payment_instances[job_id].complete_payment(payment_id, result_string)
-        logger.info(f"Payment completed for job {job_id}")
-
-        # Update job status
-        jobs[job_id]["status"] = "completed"
-        jobs[job_id]["payment_status"] = "completed"
-        jobs[job_id]["result"] = result
+        # Log the result for debugging
+        logger.info(f"Result type: {type(result_string)}")
+        logger.info(f"Result length: {len(result_string)} characters")
+        logger.info(f"Result preview (first 500 chars): {result_string[:500]}")
+        
+        # Submit result to Masumi
+        logger.info(f"📤 Sending result to Masumi for payment {payment_id}")
+        logger.info(f"Using payment instance: {payment_instances[job_id]}")
+        
+        try:
+            completion_response = await payment_instances[job_id].complete_payment(payment_id, result_string)
+            logger.info(f"✅ Masumi API response: {json.dumps(completion_response, indent=2)}")
+            
+            # Check if submission was successful
+            if completion_response and completion_response.get("status") == "success":
+                logger.info(f"✅ Result successfully submitted to Masumi!")
+                result_hash = completion_response.get('data', {}).get('resultHash', 'N/A')
+                logger.info(f"Result hash: {result_hash}")
+                logger.info(f"Result will be verified on-chain within 1-2 minutes")
+                
+                # Update job status in MongoDB
+                await mongo_store.update_job(job_id, {
+                    "status": "completed",
+                    "payment_status": "result_submitted",
+                    "result": result_dict,
+                    "result_hash": result_hash
+                })
+            else:
+                logger.error(f"❌ Result submission failed!")
+                logger.error(f"Response: {completion_response}")
+                await mongo_store.update_job(job_id, {
+                    "status": "failed",
+                    "error": f"Result submission failed: {completion_response}"
+                })
+                
+        except Exception as submit_error:
+            logger.error(f"❌ Exception during result submission: {str(submit_error)}", exc_info=True)
+            await mongo_store.update_job(job_id, {
+                "status": "failed",
+                "error": f"Result submission error: {str(submit_error)}"
+            })
+            raise
 
         # Stop monitoring payment status
         if job_id in payment_instances:
             payment_instances[job_id].stop_status_monitoring()
             del payment_instances[job_id]
+            
     except Exception as e:
-        print(f"Error processing payment {payment_id} for job {job_id}: {str(e)}")
-        jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = str(e)
+        logger.error(f"=" * 70)
+        logger.error(f"❌ ERROR IN PAYMENT CALLBACK")
+        logger.error(f"Job ID: {job_id}")
+        logger.error(f"Payment ID: {payment_id}")
+        logger.error(f"Error: {str(e)}")
+        logger.error(f"=" * 70, exc_info=True)
+        
+        # Update job status in MongoDB
+        job = await mongo_store.get_job(job_id)
+        if job:
+            await mongo_store.update_job(job_id, {
+                "status": "failed",
+                "error": str(e)
+            })
         
         # Still stop monitoring to prevent repeated failures
         if job_id in payment_instances:
@@ -218,18 +296,22 @@ async def handle_payment_status(job_id: str, payment_id: str) -> None:
 async def get_status(job_id: str):
     """ Retrieves the current status of a specific job """
     logger.info(f"Checking status for job {job_id}")
-    if job_id not in jobs:
-        logger.warning(f"Job {job_id} not found")
+    
+    # Get job from MongoDB
+    job = await mongo_store.get_job(job_id)
+    if not job:
+        logger.warning(f"Job {job_id} not found in MongoDB")
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = jobs[job_id]
-
-    # Check latest payment status if payment instance exists
+    # Check latest payment status if payment instance exists (pod-local)
     if job_id in payment_instances:
         try:
             status = await payment_instances[job_id].check_payment_status()
-            job["payment_status"] = status.get("data", {}).get("status")
-            logger.info(f"Updated payment status for job {job_id}: {job['payment_status']}")
+            payment_status = status.get("data", {}).get("status")
+            # Update in MongoDB
+            await mongo_store.update_job(job_id, {"payment_status": payment_status})
+            job["payment_status"] = payment_status
+            logger.info(f"Updated payment status for job {job_id}: {payment_status}")
         except ValueError as e:
             logger.warning(f"Error checking payment status: {str(e)}")
             job["payment_status"] = "unknown"
@@ -237,12 +319,22 @@ async def get_status(job_id: str):
             logger.error(f"Error checking payment status: {str(e)}", exc_info=True)
             job["payment_status"] = "error"
 
-
     result_data = job.get("result")
-    logger.info(f"Result data: {result_data}")
-    result = result_data.raw if result_data and hasattr(result_data, "raw") else None
-
-
+    logger.info(f"Result data type: {type(result_data)}")
+    
+    # Format result as plain string (not JSON) for Sokosumi
+    if result_data:
+        if isinstance(result_data, dict):
+            # Convert dict to plain string
+            result = str(result_data)
+        elif isinstance(result_data, str):
+            # Already a string
+            result = result_data
+        else:
+            # It's a CrewOutput or other object
+            result = result_data.raw if hasattr(result_data, "raw") else str(result_data)
+    else:
+        result = None
 
     return {
         "job_id": job_id,
@@ -337,6 +429,7 @@ def main():
     print("\n" + "=" * 70 + "\n")
     
     # Ensure terminal is properly reset after CrewAI execution
+    import sys
     sys.stdout.flush()
     sys.stderr.flush()
 
@@ -363,3 +456,5 @@ if __name__ == "__main__":
     else:
         # Run standalone mode
         main()
+
+# Made with Bob
