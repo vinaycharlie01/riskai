@@ -77,6 +77,11 @@ spec:
       labels:
         app: python-api
     spec:
+      initContainers:
+      - name: wait-for-mongodb
+        image: busybox
+        command: ['sh', '-c', 'until nc -z mongodb 27017; do echo waiting; sleep 2; done']
+
       containers:
         - name: python-api
           image: ghcr.io/vinaycharlie01/local-llama-agent-python:v1
@@ -146,7 +151,7 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 3
@@ -154,7 +159,7 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 3

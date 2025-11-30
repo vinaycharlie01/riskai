@@ -391,12 +391,12 @@ async def input_schema():
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    """
-    Returns the health of the server.
-    """
-    return {
-        "status": "healthy"
-    }
+    try:
+        await mongo_store.ping()  # make a lightweight DB call
+        return {"status": "healthy"}
+    except Exception:
+        return {"status": "unhealthy"}, 503
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Main Logic if Called as a Script
