@@ -31,7 +31,7 @@ If the script doesn't work, register manually:
 PAYMENT_API_KEY="your-api-key"
 AGENT_IDENTIFIER="7e8bdaf2b2b919a3a4b94002cafb50086c0c845fe535d07a77ab7f775f39dd22a4b6c8e6e2b4e01316b52eb4926e501d5d1a9a3fe3c0e1f7ee24a996"
 SELLER_VKEY="your-seller-vkey"
-AGENT_URL="http://161.156.165.133.nip.io"
+AGENT_URL="http://app.vinayai.co.in/"
 
 # Register the agent
 curl -X POST "https://masumi-payment-service-production-755f.up.railway.app/api/v1/agents/register" \
@@ -56,7 +56,7 @@ curl -X POST "https://masumi-payment-service-production-755f.up.railway.app/api/
 
 3. **Fill in Agent Details:**
    - **Agent Identifier:** `7e8bdaf2b2b919a3a4b94002cafb50086c0c845fe535d07a77ab7f775f39dd22a4b6c8e6e2b4e01316b52eb4926e501d5d1a9a3fe3c0e1f7ee24a996`
-   - **Agent URL:** `http://161.156.165.133.nip.io`
+   - **Agent URL:** `http://app.vinayai.co.in`
    - **Seller VKey:** (from your secrets)
    - **Network:** `Preprod`
 
