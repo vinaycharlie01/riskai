@@ -1,5 +1,66 @@
+---
+# MongoDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+              name: mongodb
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: "risklens"
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: mongodb-data
+          hostPath:
+            path: /mnt/instana/stanctl/objects/mongodb-data
+            type: DirectoryOrCreate
 
 ---
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  labels:
+    app: mongodb
+spec:
+  type: ClusterIP
+  selector:
+    app: mongodb
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+      protocol: TCP
+
+---
+# Python API Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,9 +90,14 @@ spec:
               value: "0.0.0.0"
             - name: API_PORT
               value: "8000"
+            # MongoDB Configuration
+            - name: MONGO_HOST
+              value: "mongodb"
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_DB
+              value: "risklens"
             # Masumi Configuration
-            - name: PAYMENT_SERVICE_URL
-              value: "https://masumi-payment-service-production-755f.up.railway.app/api/v1"
             - name: NETWORK
               value: "Preprod"
             - name: PAYMENT_AMOUNT
@@ -39,6 +105,11 @@ spec:
             - name: PAYMENT_UNIT
               value: "16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde0014df10745553444d"
             # Secrets from Secret resource
+            - name: PAYMENT_SERVICE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: masumi-secrets
+                  key: payment_server_url
             - name: PAYMENT_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -75,22 +146,23 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /availability
+              path: /health
               port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 3
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10
             failureThreshold: 3
       imagePullSecrets:
         - name: ghcr-secret
 
 ---
+# Python API Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -115,7 +187,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: vinay@example.com  # Update with your email
+    email: your-real-email@gmail.com
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
@@ -135,7 +207,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: 161.156.165.133.nip.io
+    - host: app.vinayai.co.in
       http:
         paths:
           - path: /
@@ -147,7 +219,7 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - 161.156.165.133.nip.io
+        - app.vinayai.co.in
       secretName: python-api-tls
 
 # Made with Bob
