@@ -171,4 +171,4 @@ class MasumiPaymentService:
 # Global payment service instance
 payment_service = MasumiPaymentService()
 
-# Made with Bob
+
