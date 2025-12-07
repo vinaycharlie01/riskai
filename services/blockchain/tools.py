@@ -4,7 +4,7 @@ Custom tools for CrewAI agents to interact with blockchain data
 from crewai.tools import BaseTool
 from typing import Type
 from pydantic import BaseModel, Field
-from blockchain_analyzer import get_blockchain_data
+from services.blockchain.analyzer import get_blockchain_data
 import json
 
 class BlockchainAnalysisInput(BaseModel):
@@ -41,5 +41,4 @@ class BlockchainAnalysisTool(BaseTool):
             
         except Exception as e:
             return f"Error analyzing blockchain data: {str(e)}"
-
 
