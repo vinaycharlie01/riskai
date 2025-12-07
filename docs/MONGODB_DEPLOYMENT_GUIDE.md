@@ -382,4 +382,4 @@ For issues or questions, check:
 - Events: `kubectl get events --sort-by='.lastTimestamp'`
 - MongoDB shell: `kubectl exec -it mongodb-xxxxx-xxxxx -- mongosh risklens`
 
-// Made with Bob
+

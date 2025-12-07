@@ -42,4 +42,4 @@ class BlockchainAnalysisTool(BaseTool):
         except Exception as e:
             return f"Error analyzing blockchain data: {str(e)}"
 
-# Made with Bob
+

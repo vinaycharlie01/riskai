@@ -242,6 +242,6 @@ python main.py api
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
-// Made with Bob
+

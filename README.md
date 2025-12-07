@@ -1,7 +1,7 @@
 # 🛡️ RiskLens AI - Blockchain Compliance & Risk Scoring Agent
 
 
-**Team X07** | **Leader: Vinay** | **Masumi Hackathon**
+**Team X07** | **Leader: Vinay** | **Cardano Hackathon**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
@@ -288,7 +288,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Team Leader:** Vinay
 - **Project:** RiskLens AI
-- **Competition:** Masumi Hackathon 2025
+- **Competition:** Cardano Hackathon 2025
 
 ---
 
@@ -333,7 +333,7 @@ Need help?
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
 *Making blockchain safer, one wallet at a time* 🛡️
 

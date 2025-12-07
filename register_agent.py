@@ -152,4 +152,4 @@ if __name__ == "__main__":
         print("3. Ensure your agent URL is publicly accessible")
         print("4. Check Masumi documentation for registration requirements")
 
-# Made with Bob
+

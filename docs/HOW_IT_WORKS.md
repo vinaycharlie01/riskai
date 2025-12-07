@@ -537,8 +537,8 @@ Verification: https://cardanoscan.io/transaction/...
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
 *Making blockchain safer, one wallet at a time* 🛡️
 
-// Made with Bob
+

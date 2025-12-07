@@ -508,8 +508,8 @@ For questions about the workflow:
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
 *Last Updated: 29/11/2025*
 
-// Made with Bob
+

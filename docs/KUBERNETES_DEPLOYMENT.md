@@ -340,6 +340,6 @@ For issues or questions:
 
 ---
 
-**RiskLens AI - Built by Team X07 for Masumi Hackathon** 🛡️
+**RiskLens AI - Built by Team X07 for Cardano Hackathon** 🛡️
 
-// Made with Bob
+

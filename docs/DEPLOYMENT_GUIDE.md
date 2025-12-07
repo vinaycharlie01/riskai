@@ -129,4 +129,4 @@ async def check_availability():
 ---
 **Note:** The `agentIdentifier` field is **required** by Masumi to register and track agents. Without it, Masumi cannot identify your agent even if it's running and healthy.
 
-// Made with Bob
+

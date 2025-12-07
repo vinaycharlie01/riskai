@@ -175,4 +175,4 @@ If you're still having issues:
 
 **Important:** The agent must be **publicly accessible** for Masumi to register and use it. Make sure your ingress and firewall allow external access.
 
-// Made with Bob
+

@@ -170,4 +170,4 @@ class MongoStore:
 # Global MongoDB store instance
 mongo_store = MongoStore()
 
-# Made with Bob
+

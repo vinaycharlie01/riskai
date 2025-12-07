@@ -805,6 +805,6 @@ async def health():
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
-// Made with Bob
+

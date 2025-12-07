@@ -227,4 +227,3 @@ spec:
         - app.vinayai.co.in
       secretName: python-api-tls
 
-# Made with Bob

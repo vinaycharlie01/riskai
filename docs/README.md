@@ -113,6 +113,6 @@ Found an error or want to improve the docs? We welcome contributions!
 
 ---
 
-**Built with ❤️ by Team X07 for the Masumi Hackathon**
+**Built with ❤️ by Team X07 for the Cardano Hackathon**
 
-// Made with Bob
+
