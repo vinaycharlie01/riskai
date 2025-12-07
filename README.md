@@ -1,5 +1,9 @@
 # 🛡️ RiskLens AI - Blockchain Compliance & Risk Scoring Agent
 
+![alt text](image.png)
+
+![alt text](image2.png)
+
 **Team X07** | **Leader: Vinay** | **Masumi Hackathon**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -339,25 +343,3 @@ Need help?
 If you find RiskLens AI useful, please give us a star on GitHub! It helps us grow and improve.
 
 [![GitHub stars](https://img.shields.io/github/stars/your-repo/risklens-ai.svg?style=social&label=Star)](https://github.com/your-repo/risklens-ai)
-
-// Made with Bob
-
-
-curl -X POST "http://127.0.0.1:8000/start_job" \
--H "Content-Type: application/json" \
--d '{
-    "identifier_from_purchaser": "726573756d653031",
-    "input_data": {
-        "text": "Name: Alice Johnson\nEmail: alice@example.com\nPhone: (555) 123-4567\n\nProfessional Summary:\nExperienced software engineer with 5+ years...\n\nWork Experience:\n- Senior Developer at TechCorp (2021-2024)\n\nEducation:\n- BS Computer Science, MIT (2019)\n\nSkills:\nPython, JavaScript, React, AWS"
-    }
-}'
-
-
-curl -X POST http://127.0.0.1:8000/start_job \  
-  -H "Content-Type: application/json" \
-  -d '{
-    "identifier_from_purchaser": "726573756d653031",        
-    "input_data": {
-      "wallet_address": "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwq2ytjqp"    }  }'                                
-    
-{"detail":"Input_data or identifier_from_purchaser is missing, invalid, or does not adhere to the schema."}#    
