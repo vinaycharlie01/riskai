@@ -8,12 +8,12 @@ Get RiskLens AI up and running in **5 minutes**!
 
 Before you begin, ensure you have:
 
-- ✅ Python 3.12 or higher
-- ✅ OpenAI API Key ([Get one here](https://platform.openai.com/api-keys))
-- ✅ Blockfrost API Key ([Get free key](https://blockfrost.io))
-- ✅ Masumi Agent Registration ([Register here](https://sokosumi.com))
-- ✅ MongoDB (Railway, Atlas, or local)
-- ✅ Git installed
+-  Python 3.12 or higher
+-  OpenAI API Key ([Get one here](https://platform.openai.com/api-keys))
+-  Blockfrost API Key ([Get free key](https://blockfrost.io))
+-  Masumi Agent Registration ([Register here](https://sokosumi.com))
+-  MongoDB (Railway, Atlas, or local)
+-  Git installed
 
 ---
 
@@ -227,10 +227,10 @@ http://localhost:8000/docs
 ```
 
 This shows the **Swagger UI** with:
-- ✅ All MIP-003 endpoints
-- ✅ Try it out functionality
-- ✅ Request/response examples
-- ✅ Schema definitions
+-  All MIP-003 endpoints
+-  Try it out functionality
+-  Request/response examples
+-  Schema definitions
 
 ---
 
@@ -240,11 +240,11 @@ This shows the **Swagger UI** with:
 
 Look for these logs when starting the API:
 
-**✅ Good (Real Data):**
+** Good (Real Data):**
 ```
-✅ BLOCKFROST_PROJECT_ID found: preprod1...xyz
-✅ BLOCKFROST API SUCCESSFULLY INITIALIZED!
-✅ Will fetch REAL blockchain data from Cardano preprod
+ BLOCKFROST_PROJECT_ID found: preprod1...xyz
+ BLOCKFROST API SUCCESSFULLY INITIALIZED!
+ Will fetch REAL blockchain data from Cardano preprod
 ```
 
 **❌ Bad (Mock Data):**
@@ -255,9 +255,9 @@ Look for these logs when starting the API:
 
 ### 2. Check MongoDB Connection
 
-**✅ Good:**
+** Good:**
 ```
-✅ Connected to MongoDB successfully
+ Connected to MongoDB successfully
 📂 Database: risklens_ai
 ```
 

@@ -128,9 +128,9 @@ After deployment, check Railway logs to confirm Blockfrost is working:
 
 ### Good Signs (Real Data):
 ```
-✅ BLOCKFROST_PROJECT_ID found: preprod1...xyz
-✅ BLOCKFROST API SUCCESSFULLY INITIALIZED!
-✅ Will fetch REAL blockchain data from Cardano preprod
+ BLOCKFROST_PROJECT_ID found: preprod1...xyz
+ BLOCKFROST API SUCCESSFULLY INITIALIZED!
+ Will fetch REAL blockchain data from Cardano preprod
 ```
 
 ### Bad Signs (Mock Data):
@@ -159,8 +159,8 @@ If you see mock data warnings, add `BLOCKFROST_PROJECT_ID` to Railway variables.
 ```
 INFO - Starting application with configuration:
 INFO - PAYMENT_SERVICE_URL: https://api.masumi.network
-INFO - ✅ BLOCKFROST API SUCCESSFULLY INITIALIZED!
-INFO - ✅ Connected to MongoDB successfully
+INFO -  BLOCKFROST API SUCCESSFULLY INITIALIZED!
+INFO -  Connected to MongoDB successfully
 INFO - Application startup complete
 INFO - Uvicorn running on http://0.0.0.0:8000
 ```
@@ -169,8 +169,8 @@ INFO - Uvicorn running on http://0.0.0.0:8000
 ```
 INFO - Received start_job request
 INFO - 🔍 Fetching address info from Blockfrost
-INFO - ✅ REAL BLOCKFROST DATA - First TX: ...
-INFO - ✅ Successfully fetched 25 REAL transactions
+INFO -  REAL BLOCKFROST DATA - First TX: ...
+INFO -  Successfully fetched 25 REAL transactions
 ```
 
 ---

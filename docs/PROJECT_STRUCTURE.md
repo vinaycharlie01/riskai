@@ -1,7 +1,7 @@
 # 📁 RiskLens AI - Project Structure
 
 **Last Updated:** December 7, 2025  
-**Status:** ✅ Modular Architecture Implemented
+**Status:**  Modular Architecture Implemented
 
 ---
 
@@ -46,8 +46,9 @@ riskai/
 │   │   ├── analyzer.py                 # Fetches blockchain data (Blockfrost API)
 │   │   └── tools.py                    # CrewAI tools for blockchain analysis
 │   │
-│   ├── payment/                        # Payment Service (Future)
-│   │   └── __init__.py                 # Ready for Masumi Network integration
+│   ├── payment/                        # Payment Service
+│   │   ├── __init__.py
+│   │   └── masumi_service.py           # Masumi Network payment integration
 │   │
 │   └── storage/                        # Storage Service
 │       ├── __init__.py
@@ -63,8 +64,10 @@ riskai/
 │   ├── __init__.py
 │   ├── models.py                       # Pydantic models (StartJobRequest, etc.)
 │   ├── formatters.py                   # Result formatting utilities
-│   └── routes/                         # API routes (future organization)
-│       └── __init__.py
+│   └── routes/                         # API routes
+│       ├── __init__.py
+│       ├── job_routes.py               # Job management endpoints
+│       └── agent_routes.py             # Agent info endpoints
 │
 ├── 📚 docs/                            # DOCUMENTATION
 │   ├── README.md                       # Documentation index
@@ -73,8 +76,8 @@ riskai/
 │   ├── DEPLOYMENT_GUIDE.md             # Railway deployment guide
 │   ├── ARCHITECTURE.md                 # System architecture
 │   ├── HOW_IT_WORKS.md                 # Technical workflow
-│   ├── REFACTORING_PLAN.md             # Refactoring implementation plan
-│   ├── REFACTORING_SUMMARY.md          # Refactoring completion summary
+│   ├── WORKFLOW_DOCUMENTATION.md       # Complete workflow details
+│   ├── COMPLETE_REFACTORING.md         # Modular refactoring overview
 │   └── PROJECT_STRUCTURE.md            # This file
 │
 ├── 🧪 tests/                           # TESTS (Future)
@@ -83,14 +86,7 @@ riskai/
 ├── 🛠️ utils/                           # UTILITIES (Future)
 │   └── __init__.py
 │
-└── 📜 OLD FILES (To be removed after testing)
-    ├── blockchain_analyzer.py          # → services/blockchain/analyzer.py
-    ├── blockchain_tools.py             # → services/blockchain/tools.py
-    ├── logging_config.py               # → core/logging.py
-    ├── mongo_store.py                  # → services/storage/mongo_store.py
-    ├── risk_analysis_crew.py           # → core/crew.py
-    ├── crew_definition.py              # Still used (agent registration)
-    └── register_agent.py               # Still used (Masumi registration)
+└── 📜 .env                             # Environment variables (not in git)
 ```
 
 ---
@@ -122,8 +118,9 @@ riskai/
 - `mongo_store.py` - MongoDB operations (save/retrieve analysis results)
 
 #### Payment Service (`services/payment/`)
-- Ready for Masumi Network payment integration
-- Future implementation
+- `masumi_service.py` - Masumi Network payment integration
+- Payment request creation and monitoring
+- Result submission to blockchain
 
 **Key Features:**
 - Isolated business logic
@@ -151,7 +148,8 @@ riskai/
 
 - `models.py` - Pydantic models for request/response
 - `formatters.py` - Result formatting utilities
-- `routes/` - Future API route organization
+- `routes/job_routes.py` - Job management endpoints
+- `routes/agent_routes.py` - Agent info endpoints
 
 **Key Features:**
 - Clean API contracts
@@ -170,16 +168,18 @@ from blockchain_analyzer import BlockchainAnalyzer
 from risk_analysis_crew import RiskAnalysisCrew
 ```
 
-### After Refactoring ✅
+### After Refactoring 
 ```python
 from core.logging import setup_logging
 from core.config import settings
 from core.crew import RiskAnalysisCrew
 from services.storage.mongo_store import mongo_store
 from services.blockchain.analyzer import BlockchainAnalyzer
+from services.payment.masumi_service import payment_service
 from agents import TransactionAnalyzerAgent, RiskScorerAgent, ComplianceReporterAgent
 from api.models import StartJobRequest
 from api.formatters import format_result_for_display
+from api.routes import job_router, agent_router
 ```
 
 ---
@@ -189,38 +189,38 @@ from api.formatters import format_result_for_display
 | Module | Files | Purpose |
 |--------|-------|---------|
 | `agents/` | 7 files | AI agent definitions |
-| `services/` | 6 files | Business services |
+| `services/` | 8 files | Business services (blockchain, payment, storage) |
 | `core/` | 4 files | Core framework |
-| `api/` | 4 files | API layer |
-| `docs/` | 9 files | Documentation |
+| `api/` | 6 files | API layer (models, formatters, routes) |
+| `docs/` | 8 files | Documentation |
 | Root | 6 files | Entry points & config |
-| **Total** | **36 files** | Complete application |
+| **Total** | **39 files** | Complete application |
 
 ---
 
 ## 🎯 Benefits of New Structure
 
-### 1. ✅ Clear Organization
+### 1.  Clear Organization
 - Easy to find specific functionality
 - Logical grouping of related code
 - Clear module boundaries
 
-### 2. ✅ Better Maintainability
+### 2.  Better Maintainability
 - Easier to modify individual components
 - Reduced risk of breaking changes
 - Clear dependencies
 
-### 3. ✅ Improved Scalability
+### 3.  Improved Scalability
 - Easy to add new agents
 - Simple to add new services
 - Clear extension points
 
-### 4. ✅ Team Collaboration
+### 4.  Team Collaboration
 - Multiple developers can work on different modules
 - Reduced merge conflicts
 - Clear ownership of modules
 
-### 5. ✅ Testing Ready
+### 5.  Testing Ready
 - Isolated modules for unit testing
 - Easier to mock dependencies
 - Better test coverage potential
@@ -331,19 +331,21 @@ from services.blockchain.analyzer import BlockchainAnalyzer
 
 ---
 
-## ✅ Verification Checklist
+##  Verification Checklist
 
 - [x] All modules created
 - [x] All `__init__.py` files present
 - [x] Agents separated into folders
-- [x] Services organized by type
+- [x] Services organized by type (blockchain, payment, storage)
 - [x] Core framework centralized
-- [x] API layer separated
+- [x] API layer separated with routes
+- [x] Payment service implemented (Masumi)
+- [x] API routes extracted (job_routes, agent_routes)
 - [x] Documentation updated
-- [ ] **TODO:** Test imports
-- [ ] **TODO:** Test functionality
+- [x] Old files removed
+- [x] Imports fixed and tested
 - [ ] **TODO:** Deploy to Railway
-- [ ] **TODO:** Remove old files
+- [ ] **TODO:** Full integration testing
 
 ---
 

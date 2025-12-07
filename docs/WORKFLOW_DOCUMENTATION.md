@@ -68,12 +68,12 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 
 **Endpoint**: `POST /start_job`
 
-**Implementation**: [`main.py:211-287`](../main.py:211)
+**Implementation**: [`api/routes/job_routes.py`](../api/routes/job_routes.py)
 
 **Process**:
 1. User submits wallet address via API
 2. System creates unique job ID (UUID)
-3. Masumi payment request is generated
+3. Masumi payment request is generated via `payment_service`
 4. Job stored in MongoDB with status "awaiting_payment"
 5. Payment monitoring begins (pod-local)
 
@@ -110,14 +110,14 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 
 #### 2.1 Payment Confirmation
 
-**Implementation**: [`main.py:292-391`](../main.py:292)
+**Implementation**: [`api/routes/job_routes.py`](../api/routes/job_routes.py)
 
 **Function**: `handle_payment_status()`
 
 **Trigger**: Payment confirmation callback from Masumi
 
 **Actions**:
-- Retrieves job from MongoDB
+- Retrieves job from MongoDB via `mongo_store`
 - Updates job status to "running"
 - Updates payment status to "paid"
 - Initiates CrewAI task execution
@@ -126,7 +126,7 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 
 #### 2.2 Fetch Transaction Data
 
-**Implementation**: [`blockchain_analyzer.py`](../blockchain_analyzer.py:1)
+**Implementation**: [`services/blockchain/analyzer.py`](../services/blockchain/analyzer.py)
 
 **Class**: `BlockchainAnalyzer`
 
@@ -174,7 +174,7 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 
 #### 2.3 Analyze Wallet Behavior
 
-**Implementation**: [`risk_analysis_crew.py:24-34`](../risk_analysis_crew.py:24)
+**Implementation**: [`agents/transaction_analyzer/agent.py`](../agents/transaction_analyzer/agent.py)
 
 **Agent**: Transaction Analyzer
 
@@ -188,7 +188,7 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 - Rapid transfer analysis
 
 **Tools Used**:
-- [`BlockchainAnalysisTool`](../blockchain_tools.py:14) - Custom CrewAI tool
+- [`BlockchainAnalysisTool`](../services/blockchain/tools.py) - Custom CrewAI tool
 
 **Analysis Includes**:
 1. Transaction patterns and frequency
@@ -203,7 +203,7 @@ This document maps the RiskLens AI workflow to the actual implementation, showin
 
 #### 2.4 Detect Suspicious Patterns
 
-**Implementation**: [`blockchain_analyzer.py:83-133`](../blockchain_analyzer.py:83)
+**Implementation**: [`services/blockchain/analyzer.py`](../services/blockchain/analyzer.py)
 
 **Function**: `analyze_transaction_patterns()`
 
@@ -250,11 +250,11 @@ if len(unusual_fees) > len(transactions) * 0.2:  # More than 20% unusual
 
 #### 2.5 Assign Risk Score
 
-**Implementation**: [`risk_analysis_crew.py:36-46`](../risk_analysis_crew.py:36)
+**Implementation**: [`agents/risk_scorer/agent.py`](../agents/risk_scorer/agent.py)
 
 **Agent**: Risk Assessment Specialist
 
-**Scoring Algorithm**: [`blockchain_analyzer.py:135-151`](../blockchain_analyzer.py:135)
+**Scoring Algorithm**: [`services/blockchain/analyzer.py`](../services/blockchain/analyzer.py)
 
 **Risk Categories**:
 ```
@@ -292,7 +292,7 @@ return min(base_score, 100)  # Cap at 100
 
 #### 2.6 Generate Compliance Report
 
-**Implementation**: [`risk_analysis_crew.py:48-58`](../risk_analysis_crew.py:48)
+**Implementation**: [`agents/compliance_reporter/agent.py`](../agents/compliance_reporter/agent.py)
 
 **Agent**: Compliance Report Specialist
 
@@ -335,7 +335,7 @@ return min(base_score, 100)  # Cap at 100
 
 #### 2.7 Format Result for Display
 
-**Implementation**: [`main.py:85-181`](../main.py:85)
+**Implementation**: [`api/formatters.py`](../api/formatters.py)
 
 **Function**: `format_result_for_display()`
 
@@ -388,9 +388,9 @@ End of Report
 
 #### 2.8 Submit to Masumi Network
 
-**Implementation**: [`main.py:333-365`](../main.py:333)
+**Implementation**: [`services/payment/masumi_service.py`](../services/payment/masumi_service.py)
 
-**Function**: `payment.complete_payment()`
+**Function**: `payment_service.complete_payment()`
 
 **Process**:
 1. Format result as string
@@ -411,7 +411,7 @@ End of Report
 
 **Endpoint**: `GET /status?job_id=xxx`
 
-**Implementation**: [`main.py:396-445`](../main.py:396)
+**Implementation**: [`api/routes/job_routes.py`](../api/routes/job_routes.py)
 
 **Response**:
 ```json
@@ -435,6 +435,34 @@ End of Report
 - `result_submitted` - Result submitted to Masumi
 - `unknown` - Payment status unclear
 - `error` - Payment check failed
+
+---
+
+## 🏗️ Modular Architecture
+
+### Directory Structure
+```
+riskai/
+├── main.py                    # Entry point
+├── agents/                    # AI Agents
+│   ├── transaction_analyzer/
+│   ├── risk_scorer/
+│   └── compliance_reporter/
+├── services/                  # Business Services
+│   ├── blockchain/           # Blockfrost integration
+│   ├── payment/              # Masumi payment service
+│   └── storage/              # MongoDB operations
+├── core/                      # Core Framework
+│   ├── config.py             # Settings
+│   ├── logging.py            # Logging
+│   └── crew.py               # CrewAI orchestration
+└── api/                       # API Layer
+    ├── models.py             # Pydantic models
+    ├── formatters.py         # Result formatting
+    └── routes/               # API endpoints
+        ├── job_routes.py     # Job management
+        └── agent_routes.py   # Agent info
+```
 
 ---
 
@@ -566,6 +594,7 @@ for wallet in active_wallets:
 - [API Reference](API_REFERENCE.md) - MIP-003 endpoints
 - [Architecture](ARCHITECTURE.md) - System design
 - [How It Works](HOW_IT_WORKS.md) - Simple explanation
+- [Project Structure](PROJECT_STRUCTURE.md) - Directory structure
 
 ---
 

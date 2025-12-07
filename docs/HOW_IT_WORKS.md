@@ -76,7 +76,7 @@ System → Blockfrost API → Gets Real Blockchain Data
 ```
 
 **Important:** 
-- ✅ With `BLOCKFROST_PROJECT_ID` set: Real blockchain data
+-  With `BLOCKFROST_PROJECT_ID` set: Real blockchain data
 - ❌ Without API key: Mock data (for testing only)
 
 ---
@@ -92,7 +92,7 @@ AI Agents → Examine Patterns → Find Suspicious Activity
 **Job:** Look at all transactions and find patterns
 
 **Checks for:**
-- ✅ Normal activity (regular transactions)
+-  Normal activity (regular transactions)
 - ⚠️ Suspicious patterns (rapid transfers)
 - 🚨 Red flags (mixer usage, scam connections)
 
@@ -199,7 +199,7 @@ End of Report
 
 ---
 
-### Step 6: ✅ User Gets Results
+### Step 6:  User Gets Results
 ```
 System → Returns Report → User Takes Action
 ```
@@ -218,10 +218,10 @@ Response:
 ```
 
 **User can:**
-- ✅ View detailed risk analysis
-- ✅ See formatted report on Sokosumi dashboard
-- ✅ Share with exchange/regulator
-- ✅ Verify on blockchain
+-  View detailed risk analysis
+-  See formatted report on Sokosumi dashboard
+-  Share with exchange/regulator
+-  Verify on blockchain
 
 ---
 
@@ -400,17 +400,17 @@ Total:           ~20-45 seconds
 
 ## 🔐 Security & Privacy
 
-### ✅ What We DON'T Need:
+###  What We DON'T Need:
 - ❌ Private keys
 - ❌ Passwords
 - ❌ Personal information
 - ❌ Permission to access wallet
 
-### ✅ What We DO Use:
-- ✅ Public blockchain data only (via Blockfrost)
-- ✅ Transparent analysis
-- ✅ Verifiable results
-- ✅ On-chain proof
+###  What We DO Use:
+-  Public blockchain data only (via Blockfrost)
+-  Transparent analysis
+-  Verifiable results
+-  On-chain proof
 
 ---
 
@@ -424,7 +424,7 @@ Total:           ~20-45 seconds
 | 🔒 **Secure** | No private keys needed |
 | 💰 **Affordable** | Pay only when you use it |
 | 🌐 **Decentralized** | Runs on Masumi Network |
-| ✅ **Verifiable** | On-chain proof of results |
+|  **Verifiable** | On-chain proof of results |
 | 📊 **Clear** | Easy-to-understand scores |
 
 ---

@@ -15,15 +15,15 @@ RiskLens AI is an **autonomous AI agent** that analyzes blockchain wallet activi
 
 ### 🌟 Key Features
 
-- ✅ **AI-Powered Analysis** - Multi-agent system using GPT-4
-- ✅ **Real Blockchain Data** - Blockfrost API integration for Cardano
-- ✅ **Risk Scoring** - 0-100 risk scores with clear categories
-- ✅ **Suspicious Pattern Detection** - Identifies scams, mixers, and anomalies
-- ✅ **On-Chain Reports** - Tamper-proof results on Cardano blockchain
-- ✅ **Pay-Per-Use** - Decentralized payment via Masumi Network
-- ✅ **Fast & Accurate** - Results in ~30 seconds
-- ✅ **MIP-003 Compliant** - Standard Masumi agent protocol
-- ✅ **Easy Integration** - Simple REST API
+-  **AI-Powered Analysis** - Multi-agent system using GPT-4
+-  **Real Blockchain Data** - Blockfrost API integration for Cardano
+-  **Risk Scoring** - 0-100 risk scores with clear categories
+-  **Suspicious Pattern Detection** - Identifies scams, mixers, and anomalies
+-  **On-Chain Reports** - Tamper-proof results on Cardano blockchain
+-  **Pay-Per-Use** - Decentralized payment via Masumi Network
+-  **Fast & Accurate** - Results in ~30 seconds
+-  **MIP-003 Compliant** - Standard Masumi agent protocol
+-  **Easy Integration** - Simple REST API
 
 ---
 

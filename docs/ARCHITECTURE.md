@@ -8,18 +8,18 @@
 
 ## 📋 Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [System Overview](#system-overview)
-3. [Architectural Principles](#architectural-principles)
-4. [High-Level Architecture](#high-level-architecture)
-5. [Component Architecture](#component-architecture)
-6. [Data Architecture](#data-architecture)
-7. [Integration Architecture](#integration-architecture)
-8. [Deployment Architecture](#deployment-architecture)
-9. [Security Architecture](#security-architecture)
-10. [Scalability & Performance](#scalability--performance)
-11. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
-12. [Future Considerations](#future-considerations)
+1. [Executive Summary](#-executive-summary)
+2. [System Overview](#-system-overview)
+3. [Architectural Principles](#-architectural-principles)
+4. [High-Level Architecture](#️-high-level-architecture)
+5. [Component Architecture](#-component-architecture)
+6. [Data Architecture](#-data-architecture)
+7. [Integration Architecture](#-integration-architecture)
+8. [Deployment Architecture](#-deployment-architecture)
+9. [Security Architecture](#-security-architecture)
+10. [Scalability & Performance](#-scalability--performance)
+11. [Design Decisions & Trade-offs](#-design-decisions--trade-offs)
+12. [Future Considerations](#-future-considerations)
 
 ---
 
@@ -55,17 +55,11 @@ RiskLens AI provides **automated blockchain wallet risk assessment** for:
 ### Core Capabilities
 
 ```mermaid
-graph LR
     A[Wallet Address] --> B[Blockchain Data Fetch]
     B --> C[AI Analysis]
     C --> D[Risk Scoring]
     D --> E[Compliance Report]
     E --> F[On-Chain Storage]
-    
-    style A fill:#e1f5ff
-    style C fill:#fff4e1
-    style E fill:#e8f5e9
-    style F fill:#f3e5f5
 ```
 
 1. **Real-time Data Acquisition** - Fetch transaction history from Cardano blockchain
@@ -118,6 +112,7 @@ Adheres to industry standards:
 ## 🏛️ High-Level Architecture
 
 ### System Context Diagram
+
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -215,7 +210,11 @@ Adheres to industry standards:
 
 ### 1. API Gateway Layer
 
-**File:** [`main.py`](../main.py)
+**Files:**
+- [`main.py`](../main.py) - Application entry point
+- [`api/routes/job_routes.py`](../api/routes/job_routes.py) - Job management endpoints
+- [`api/routes/agent_routes.py`](../api/routes/agent_routes.py) - Agent info endpoints
+- [`api/models.py`](../api/models.py) - Pydantic request/response models
 
 **Responsibilities:**
 - HTTP request/response handling
@@ -236,7 +235,7 @@ Adheres to industry standards:
 async def lifespan(app: FastAPI):
     # Startup: Initialize resources
     await mongo_store.connect()
-    logger.info("✅ Application started")
+    logger.info(" Application started")
     yield
     # Shutdown: Cleanup resources
     await mongo_store.disconnect()
@@ -253,16 +252,20 @@ app = FastAPI(
 
 | Endpoint | Method | Purpose | MIP-003 |
 |----------|--------|---------|---------|
-| `/` | GET | Root/Info | ✅ |
-| `/start_job` | POST | Initiate analysis | ✅ Required |
-| `/status` | GET | Check job status | ✅ Required |
-| `/availability` | GET | Agent availability | ✅ Required |
-| `/input_schema` | GET | Input format | ✅ Required |
-| `/health` | GET | Health check | ✅ |
+| `/` | GET | Root/Info |  |
+| `/start_job` | POST | Initiate analysis |  Required |
+| `/status` | GET | Check job status |  Required |
+| `/availability` | GET | Agent availability |  Required |
+| `/input_schema` | GET | Input format |  Required |
+| `/health` | GET | Health check |  |
 
 ---
 
 ### 2. Payment & Orchestration Layer
+
+**Files:**
+- [`services/payment/masumi_service.py`](../services/payment/masumi_service.py) - Payment service
+- [`core/crew.py`](../core/crew.py) - CrewAI orchestration
 
 **Integration:** Masumi Network SDK
 
@@ -345,7 +348,11 @@ app = FastAPI(
 
 ### 3. AI Processing Layer
 
-**File:** [`risk_analysis_crew.py`](../risk_analysis_crew.py)
+**Files:**
+- [`core/crew.py`](../core/crew.py) - CrewAI orchestration
+- [`agents/transaction_analyzer/agent.py`](../agents/transaction_analyzer/agent.py) - Transaction analyzer
+- [`agents/risk_scorer/agent.py`](../agents/risk_scorer/agent.py) - Risk scorer
+- [`agents/compliance_reporter/agent.py`](../agents/compliance_reporter/agent.py) - Compliance reporter
 
 **Framework:** CrewAI (Multi-Agent Orchestration)
 
@@ -440,7 +447,9 @@ app = FastAPI(
 
 #### 4.1 Blockchain Data Access
 
-**File:** [`blockchain_analyzer.py`](../blockchain_analyzer.py)
+**Files:**
+- [`services/blockchain/analyzer.py`](../services/blockchain/analyzer.py) - Blockchain data fetching
+- [`services/blockchain/tools.py`](../services/blockchain/tools.py) - CrewAI tools
 
 **Purpose:** Fetch and analyze real blockchain data
 
@@ -533,7 +542,7 @@ Wallet Address
 
 #### 4.2 Persistent Storage
 
-**File:** [`mongo_store.py`](../mongo_store.py)
+**File:** [`services/storage/mongo_store.py`](../services/storage/mongo_store.py)
 
 **Purpose:** Persistent job state management
 
@@ -1105,8 +1114,8 @@ Benefits:
 - Modern Python 3.11+ features
 
 **Trade-offs:**
-- ✅ Better performance
-- ✅ Type safety
+-  Better performance
+-  Type safety
 - ❌ Smaller ecosystem than Flask
 - ❌ Steeper learning curve
 
@@ -1122,8 +1131,8 @@ Benefits:
 - Railway integration
 
 **Trade-offs:**
-- ✅ Schema flexibility
-- ✅ Easy scaling
+-  Schema flexibility
+-  Easy scaling
 - ❌ No ACID transactions (not needed)
 - ❌ More complex queries
 
@@ -1138,8 +1147,8 @@ Benefits:
 - Built on LangChain (best of both)
 
 **Trade-offs:**
-- ✅ Cleaner agent code
-- ✅ Better collaboration
+-  Cleaner agent code
+-  Better collaboration
 - ❌ Less flexible than raw LangChain
 - ❌ Smaller community
 
@@ -1154,8 +1163,8 @@ Benefits:
 - Still store JSON internally
 
 **Trade-offs:**
-- ✅ Better UX on dashboard
-- ✅ Formatted display
+-  Better UX on dashboard
+-  Formatted display
 - ❌ Less programmatic access
 - ❌ Parsing required for API consumers
 
@@ -1171,8 +1180,8 @@ Benefits:
 - Easy environment management
 
 **Trade-offs:**
-- ✅ Faster time to market
-- ✅ Lower operational overhead
+-  Faster time to market
+-  Lower operational overhead
 - ❌ Less control than AWS
 - ❌ Vendor lock-in
 

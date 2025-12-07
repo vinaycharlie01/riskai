@@ -11,12 +11,12 @@ Complete API documentation for RiskLens AI blockchain compliance and risk scorin
 
 ## 📋 Table of Contents
 
-1. [MIP-003 Compliance](#mip-003-compliance)
-2. [Authentication](#authentication)
-3. [Endpoints](#endpoints)
-4. [Data Models](#data-models)
-5. [Error Handling](#error-handling)
-6. [Examples](#examples)
+1. [MIP-003 Compliance](#-mip-003-compliance)
+2. [Authentication](#-authentication)
+3. [Endpoints](#-endpoints)
+4. [Data Models](#-data-models)
+5. [Error Handling](#️-error-handling)
+6. [Examples](#-complete-workflow-example)
 
 ---
 
@@ -26,15 +26,15 @@ RiskLens AI implements the **Masumi Integration Protocol (MIP-003)** standard, w
 
 ### Required Endpoints
 
-- ✅ `GET /availability` - Agent availability status
-- ✅ `GET /input_schema` - Input requirements
-- ✅ `POST /start_job` - Create job and payment request
-- ✅ `GET /status` - Check job status
+-  `GET /availability` - Agent availability status
+-  `GET /input_schema` - Input requirements
+-  `POST /start_job` - Create job and payment request
+-  `GET /status` - Check job status
 
 ### Additional Endpoints
 
-- ✅ `GET /` - API information
-- ✅ `GET /health` - Health check with MongoDB ping
+-  `GET /` - API information
+-  `GET /health` - Health check with MongoDB ping
 
 ---
 
