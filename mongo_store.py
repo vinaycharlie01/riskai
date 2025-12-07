@@ -55,10 +55,22 @@ class MongoStore:
             self.db = self.client[self.mongo_db]
             self.jobs_collection = self.db.jobs
             
-            # Create indexes for better performance
-            await self.jobs_collection.create_index("job_id", unique=True)
-            await self.jobs_collection.create_index("status")
-            await self.jobs_collection.create_index("blockchain_identifier")
+            # Create indexes for better performance using IndexModel
+            from pymongo import IndexModel, ASCENDING
+            
+            indexes = [
+                IndexModel([("job_id", ASCENDING)], unique=True, name="job_id_unique"),
+                IndexModel([("status", ASCENDING)], name="status_index"),
+                IndexModel([("blockchain_identifier", ASCENDING)], name="blockchain_id_index")
+            ]
+            
+            # Create indexes asynchronously
+            try:
+                await self.jobs_collection.create_indexes(indexes)
+                logger.info("✅ MongoDB indexes created successfully")
+            except Exception as idx_error:
+                # Indexes might already exist, which is fine
+                logger.info(f"ℹ️  Index creation note: {str(idx_error)}")
             
             # Mask password in URI for logging
             safe_uri = self.mongo_uri
@@ -158,3 +170,4 @@ class MongoStore:
 # Global MongoDB store instance
 mongo_store = MongoStore()
 
+# Made with Bob

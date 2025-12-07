@@ -2,6 +2,7 @@ import os
 import uvicorn
 import uuid
 import json
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -26,30 +27,30 @@ NETWORK = os.getenv("NETWORK")
 logger.info("Starting application with configuration:")
 logger.info(f"PAYMENT_SERVICE_URL: {PAYMENT_SERVICE_URL}")
 
-# Initialize FastAPI
-app = FastAPI(
-    title="RiskLens AI - Blockchain Compliance & Risk Scoring Agent",
-    description="AI-powered compliance and risk scoring agent for blockchain wallets. Analyzes transactions, detects suspicious patterns, and generates on-chain compliance reports.",
-    version="1.0.0"
-)
-
 # ─────────────────────────────────────────────────────────────────────────────
 # MongoDB-based distributed job store
 # ─────────────────────────────────────────────────────────────────────────────
 # Payment instances stored in memory per pod (monitoring is pod-local)
 payment_instances = {}
 
-@app.on_event("startup")
-async def startup_event():
-    """Connect to MongoDB on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup
     await mongo_store.connect()
     logger.info("✅ Application started with MongoDB support")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Disconnect from MongoDB on shutdown"""
+    yield
+    # Shutdown
     await mongo_store.disconnect()
     logger.info("Application shutdown complete")
+
+# Initialize FastAPI with lifespan
+app = FastAPI(
+    title="RiskLens AI - Blockchain Compliance & Risk Scoring Agent",
+    description="AI-powered compliance and risk scoring agent for blockchain wallets. Analyzes transactions, detects suspicious patterns, and generates on-chain compliance reports.",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Initialize Masumi Payment Config
