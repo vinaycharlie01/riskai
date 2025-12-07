@@ -1,6 +1,5 @@
 import os
 import logging
-import sys
 from logging.handlers import RotatingFileHandler
 
 def setup_logging(log_level=logging.INFO):
@@ -20,20 +19,14 @@ def setup_logging(log_level=logging.INFO):
     
     # Create formatter for consistent log formatting
     file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_formatter = logging.Formatter('%(levelname)s - %(message)s')
     
     # Set up rotating file handler (10 MB per file, keep 5 backup files)
     file_handler = RotatingFileHandler(
-        log_file,
+        log_file, 
         maxBytes=10*1024*1024,  # 10 MB
         backupCount=5
     )
     file_handler.setFormatter(file_formatter)
-    
-    # Set up console handler for Railway logs (stdout)
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(console_formatter)
-    console_handler.setLevel(log_level)
     
     # Configure root logger
     root_logger = logging.getLogger()
@@ -41,11 +34,11 @@ def setup_logging(log_level=logging.INFO):
     
     # Remove any existing handlers to prevent duplicates
     for handler in root_logger.handlers[:]:
-        root_logger.removeHandler(handler)
+        if isinstance(handler, logging.StreamHandler):
+            root_logger.removeHandler(handler)
     
-    # Add both file and console handlers
+    # Add the file handler
     root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
     
     return root_logger
 
