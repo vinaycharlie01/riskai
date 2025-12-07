@@ -9,19 +9,35 @@ class MongoStore:
     """MongoDB-based job storage for distributed deployment"""
     
     def __init__(self):
-        mongo_host = os.getenv("MONGO_HOST", "mongodb")
-        mongo_port = int(os.getenv("MONGO_PORT", "27017"))
-        mongo_db = os.getenv("MONGO_DB", "risklens")
-        mongo_user = os.getenv("MONGO_USER", "")
-        mongo_password = os.getenv("MONGO_PASSWORD", "")
+        # Priority 1: Check for MONGO_URL (Railway or external MongoDB)
+        mongo_url = os.getenv("MONGO_URL") or os.getenv("MONGO_PUBLIC_URL")
         
-        # Build connection string
-        if mongo_user and mongo_password:
-            self.mongo_uri = f"mongodb://{mongo_user}:{mongo_password}@{mongo_host}:{mongo_port}"
+        if mongo_url:
+            # Use the provided MongoDB URL (Railway, Atlas, etc.)
+            self.mongo_uri = mongo_url
+            # Always use the database name from env var or default
+            # Don't extract from URL - create a new database if needed
+            self.mongo_db = os.getenv("MONGO_DB", "risklens_ai")
+            logger.info(f"🔗 Using MONGO_URL for connection")
+            logger.info(f"📂 Will use/create database: {self.mongo_db}")
         else:
-            self.mongo_uri = f"mongodb://{mongo_host}:{mongo_port}"
+            # Priority 2: Build connection string from individual env vars (Kubernetes)
+            mongo_host = os.getenv("MONGO_HOST") or os.getenv("MONGOHOST", "mongodb")
+            mongo_port = int(os.getenv("MONGO_PORT") or os.getenv("MONGOPORT", "27017"))
+            mongo_db = os.getenv("MONGO_DB", "risklens_ai")
+            mongo_user = os.getenv("MONGO_USER") or os.getenv("MONGOUSER") or os.getenv("MONGO_INITDB_ROOT_USERNAME", "")
+            mongo_password = os.getenv("MONGO_PASSWORD") or os.getenv("MONGOPASSWORD") or os.getenv("MONGO_INITDB_ROOT_PASSWORD", "")
+            
+            # Build connection string
+            if mongo_user and mongo_password:
+                self.mongo_uri = f"mongodb://{mongo_user}:{mongo_password}@{mongo_host}:{mongo_port}"
+                logger.info(f"🔗 Using MongoDB with authentication: {mongo_host}:{mongo_port}")
+            else:
+                self.mongo_uri = f"mongodb://{mongo_host}:{mongo_port}"
+                logger.info(f"🔗 Using MongoDB without authentication: {mongo_host}:{mongo_port}")
+            
+            self.mongo_db = mongo_db
         
-        self.mongo_db = mongo_db
         self.client: Optional[AsyncIOMotorClient] = None
         self.db = None
         self.jobs_collection = None
@@ -44,7 +60,20 @@ class MongoStore:
             await self.jobs_collection.create_index("status")
             await self.jobs_collection.create_index("blockchain_identifier")
             
-            logger.info(f"✅ Connected to MongoDB at {self.mongo_uri}")
+            # Mask password in URI for logging
+            safe_uri = self.mongo_uri
+            if "@" in safe_uri and "://" in safe_uri:
+                # mongodb://user:password@host:port -> mongodb://user:***@host:port
+                parts = safe_uri.split("://")
+                if "@" in parts[1]:
+                    auth_and_host = parts[1].split("@")
+                    if ":" in auth_and_host[0]:
+                        user = auth_and_host[0].split(":")[0]
+                        safe_uri = f"{parts[0]}://{user}:***@{auth_and_host[1]}"
+            
+            logger.info(f"✅ Connected to MongoDB successfully")
+            logger.info(f"📂 Database: {self.mongo_db}")
+            logger.info(f"🔗 Connection: {safe_uri}")
         except Exception as e:
             logger.error(f"❌ Failed to connect to MongoDB: {str(e)}")
             raise
@@ -54,6 +83,13 @@ class MongoStore:
         if self.client:
             self.client.close()
             logger.info("Disconnected from MongoDB")
+    
+    async def ping(self):
+        """Ping MongoDB to check connection health"""
+        if self.client:
+            await self.client.admin.command('ping')
+        else:
+            raise Exception("MongoDB client not connected")
     
     async def set_job(self, job_id: str, job_data: Dict[str, Any]):
         """Store job data in MongoDB"""
@@ -122,4 +158,3 @@ class MongoStore:
 # Global MongoDB store instance
 mongo_store = MongoStore()
 
-# Made with Bob
