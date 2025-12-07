@@ -1,8 +1,5 @@
 # 🛡️ RiskLens AI - Blockchain Compliance & Risk Scoring Agent
 
-![alt text](image.png)
-
-![alt text](image2.png)
 
 **Team X07** | **Leader: Vinay** | **Masumi Hackathon**
 
@@ -179,6 +176,10 @@ curl -X POST http://localhost:8000/start_job \
 ```bash
 curl "http://localhost:8000/status?job_id=<job_id>"
 ```
+
+![alt text](image.png)
+
+![alt text](image2.png)
 
 ### Response
 
