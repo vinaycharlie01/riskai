@@ -9,6 +9,7 @@ develop-eggs/
 dist/
 downloads/
 eggs/
+mongotest/
 .eggs/
 lib/
 lib64/
