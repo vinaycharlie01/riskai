@@ -9,7 +9,10 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-# Import from modular structure
+# Load environment variables FIRST before any imports that use them
+load_dotenv(override=True)
+
+# Import from modular structure (after .env is loaded)
 from core.logging import setup_logging
 from core.config import settings
 from core.crew import RiskAnalysisCrew
@@ -18,9 +21,6 @@ from api.routes import job_router, agent_router
 
 # Configure logging
 logger = setup_logging()
-
-# Load environment variables
-load_dotenv(override=True)
 
 logger.info("Application starting")
 
@@ -91,3 +91,4 @@ if __name__ == "__main__":
         # Run standalone mode
         main()
 
+# Made with Bob

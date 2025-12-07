@@ -19,15 +19,16 @@ router = APIRouter()
 @router.get("/availability")
 async def check_availability():
     """Checks if the server is operational"""
-    if not settings.agent_identifier:
-        logger.error("AGENT_IDENTIFIER environment variable is not set!")
-        raise HTTPException(status_code=500, detail="Agent identifier not configured")
+    agent_id = settings.agent_identifier or "local-dev-agent"
     
-    logger.info(f"Availability check - Agent Identifier: {settings.agent_identifier}")
+    if not settings.agent_identifier:
+        logger.warning("AGENT_IDENTIFIER not set, using default for local testing")
+    
+    logger.info(f"Availability check - Agent Identifier: {agent_id}")
     return {
         "status": "available",
         "type": "masumi-agent",
-        "agentIdentifier": settings.agent_identifier,
+        "agentIdentifier": agent_id,
         "message": "Server operational."
     }
 
@@ -89,3 +90,4 @@ async def root():
         }
     }
 
+# Made with Bob
