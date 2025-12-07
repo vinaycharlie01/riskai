@@ -488,15 +488,35 @@ async def input_schema():
     }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6) Health Check
+# 6) Root Endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+@app.get("/")
+async def root():
+    """Root endpoint - redirects to docs"""
+    return {
+        "message": "RiskLens AI - Blockchain Compliance & Risk Scoring Agent",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "endpoints": {
+            "availability": "/availability",
+            "input_schema": "/input_schema",
+            "start_job": "/start_job",
+            "status": "/status?job_id=<job_id>",
+            "health": "/health"
+        }
+    }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7) Health Check
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
     try:
-        await mongo_store.ping()  # make a lightweight DB call
+        await mongo_store.ping()
         return {"status": "healthy"}
-    except Exception:
-        return {"status": "unhealthy"}, 503
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="Service unhealthy")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
