@@ -5,7 +5,7 @@ Fetches real transaction data from Cardano blockchain
 import os
 from typing import Dict, List, Any
 from blockfrost import BlockFrostApi, ApiError
-from logging_config import get_logger
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -221,5 +221,4 @@ def get_blockchain_data(wallet_address: str) -> Dict[str, Any]:
         "risk_score": risk_score,
         "transaction_count": len(transactions)
     }
-
 

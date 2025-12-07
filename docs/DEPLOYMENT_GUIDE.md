@@ -1,132 +1,315 @@
-# 🔧 Fix for Masumi Agent Registration Issue
+# 🚀 RiskLens AI Deployment Guide
 
-## Problem Identified
-Your agent was running but **not showing up in Masumi** because the `/availability` endpoint was not returning the `agentIdentifier` field, which is required for Masumi to recognize and register your agent.
+Complete guide for deploying RiskLens AI to Railway with Masumi integration.
 
-## What Was Fixed
-Updated the `/availability` endpoint in `main.py` to include the `agentIdentifier` field.
+---
 
-## Deployment Steps
+## 📋 Prerequisites
 
-### Step 1: Build and Push Docker Image
+Before deploying, ensure you have:
+
+1. **Railway Account**: Sign up at https://railway.app/
+2. **GitHub Repository**: Your code pushed to GitHub
+3. **Blockfrost API Key**: Get from https://blockfrost.io/ (free tier available)
+4. **Masumi Agent Registration**: Register at https://sokosumi.com/
+5. **MongoDB Database**: Railway MongoDB or MongoDB Atlas
+6. **OpenAI API Key**: For AI analysis (https://platform.openai.com/)
+
+---
+
+## 🚀 Railway Deployment Steps
+
+### Step 1: Create Railway Project
+
+1. Go to https://railway.app/
+2. Click **"New Project"**
+3. Select **"Deploy from GitHub repo"**
+4. Choose your RiskLens AI repository
+5. Railway will auto-detect the Python app
+
+### Step 2: Add MongoDB Service
+
+**Option A: Railway MongoDB (Recommended)**
+1. In your Railway project, click **"New"**
+2. Select **"Database"** → **"MongoDB"**
+3. Railway will create a MongoDB instance
+4. Copy the `MONGO_URL` from the MongoDB service variables
+
+**Option B: MongoDB Atlas**
+1. Create a cluster at https://www.mongodb.com/cloud/atlas
+2. Get your connection string
+3. Use it as `MONGO_URL` in Railway
+
+### Step 3: Configure Environment Variables
+
+In Railway, go to your service → **Variables** tab and add:
+
+#### Required Variables
+
 ```bash
-# Build the new image
-docker build -t ghcr.io/vinaycharlie01/local-llama-agent-python:v1 .
+# Masumi Integration (from agent registration)
+AGENT_IDENTIFIER=your_agent_identifier_here
+PAYMENT_SERVICE_URL=https://api.masumi.network
+PAYMENT_API_KEY=your_masumi_api_key
+SELLER_VKEY=your_seller_verification_key
+NETWORK=preprod
 
-# Push to registry
-docker push ghcr.io/vinaycharlie01/local-llama-agent-python:v1
+# Blockchain Data (from Blockfrost)
+BLOCKFROST_PROJECT_ID=preprodxxxxxxxxxxxxxxxxxxxxx
+
+# MongoDB (from Railway MongoDB or Atlas)
+MONGO_URL=mongodb://mongo:password@containers-us-west-123.railway.app:7654
+MONGO_DB=risklens_ai
+
+# OpenAI (for AI analysis)
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxx
 ```
 
-### Step 2: Restart Kubernetes Deployment
+#### Optional Variables
+
 ```bash
-# Force restart to pull the new image
-kubectl rollout restart deployment/python-api
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
 
-# Wait for rollout to complete
-kubectl rollout status deployment/python-api
-
-# Check pod status
-kubectl get pods -l app=python-api
+# MongoDB Individual Variables (if not using MONGO_URL)
+MONGO_HOST=mongodb
+MONGO_PORT=27017
+MONGO_USER=username
+MONGO_PASSWORD=password
 ```
 
-### Step 3: Verify the Fix
+### Step 4: Deploy
+
+1. Railway will automatically deploy after adding variables
+2. Wait for deployment to complete (~2-3 minutes)
+3. Railway will provide a public URL like:
+   ```
+   https://your-app-name.up.railway.app
+   ```
+
+### Step 5: Verify Deployment
+
+Test your endpoints:
+
 ```bash
-# Check the new pod logs
-kubectl logs -f deployment/python-api
+# Check availability
+curl https://your-app-name.up.railway.app/availability
 
-# Test the availability endpoint
-curl http://161.156.165.133.nip.io/availability
-```
-
-**Expected Response:**
-```json
+# Expected response:
 {
   "status": "available",
   "type": "masumi-agent",
-  "agentIdentifier": "your-agent-identifier-here",
+  "agentIdentifier": "your-agent-id",
   "message": "Server operational."
 }
+
+# Check input schema
+curl https://your-app-name.up.railway.app/input_schema
+
+# Check health
+curl https://your-app-name.up.railway.app/health
 ```
 
-### Step 4: Verify in Masumi
-1. Go to your Masumi dashboard
-2. Check the agents list
-3. Your agent should now appear with the correct identifier
+### Step 6: Register with Sokosumi
 
-## Quick Deploy Script
-You can also use the provided script:
-```bash
-chmod +x redeploy.sh
-./redeploy.sh
-```
-
-## Troubleshooting
-
-### If agent still doesn't show up:
-1. **Check AGENT_IDENTIFIER is set:**
-   ```bash
-   kubectl get secret masumi-secrets -o jsonpath='{.data.agent_identifier}' | base64 -d
-   ```
-
-2. **Check pod logs for errors:**
-   ```bash
-   kubectl logs deployment/python-api --tail=50
-   ```
-
-3. **Verify the availability endpoint:**
-   ```bash
-   kubectl exec -it deployment/python-api -- curl localhost:8000/availability
-   ```
-
-4. **Check if Masumi can reach your endpoint:**
-   - Ensure your ingress is working: `curl http://161.156.165.133.nip.io/availability`
-   - Check ingress logs: `kubectl logs -n ingress-nginx deployment/ingress-nginx-controller`
-
-### If you see "Agent identifier not configured" error:
-The AGENT_IDENTIFIER secret is missing or empty. Set it:
-```bash
-kubectl create secret generic masumi-secrets \
-  --from-literal=agent_identifier='your-agent-id' \
-  --from-literal=payment_api_key='your-api-key' \
-  --from-literal=seller_vkey='your-vkey' \
-  --from-literal=openai_api_key='your-openai-key' \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
-
-## What Changed in the Code
-
-**Before:**
-```python
-@app.get("/availability")
-async def check_availability():
-    return {"status": "available", "type": "masumi-agent", "message": "Server operational."}
-```
-
-**After:**
-```python
-@app.get("/availability")
-async def check_availability():
-    agent_identifier = os.getenv("AGENT_IDENTIFIER")
-    
-    if not agent_identifier:
-        logger.error("AGENT_IDENTIFIER environment variable is not set!")
-        raise HTTPException(status_code=500, detail="Agent identifier not configured")
-    
-    logger.info(f"Availability check - Agent Identifier: {agent_identifier}")
-    return {
-        "status": "available",
-        "type": "masumi-agent",
-        "agentIdentifier": agent_identifier,
-        "message": "Server operational."
-    }
-```
-
-## Next Steps After Deployment
-1. Monitor the logs to ensure no errors
-2. Test creating a job through Masumi
-3. Verify payment flow works correctly
+1. Go to https://sokosumi.com/
+2. Register your agent with:
+   - **Callback URL**: `https://your-app-name.up.railway.app`
+   - **Agent Identifier**: Same as `AGENT_IDENTIFIER` env var
+   - **Network**: `preprod` or `mainnet`
+3. Your agent should now appear on Sokosumi marketplace!
 
 ---
-**Note:** The `agentIdentifier` field is **required** by Masumi to register and track agents. Without it, Masumi cannot identify your agent even if it's running and healthy.
 
+## 🔍 Verify Blockfrost Integration
 
+After deployment, check Railway logs to confirm Blockfrost is working:
+
+### Good Signs (Real Data):
+```
+✅ BLOCKFROST_PROJECT_ID found: preprod1...xyz
+✅ BLOCKFROST API SUCCESSFULLY INITIALIZED!
+✅ Will fetch REAL blockchain data from Cardano preprod
+```
+
+### Bad Signs (Mock Data):
+```
+❌ BLOCKFROST_PROJECT_ID NOT SET!
+⚠️  Will use MOCK DATA for all requests
+```
+
+If you see mock data warnings, add `BLOCKFROST_PROJECT_ID` to Railway variables.
+
+---
+
+## 📊 Monitoring & Logs
+
+### View Logs in Railway
+
+1. Go to your Railway project
+2. Click on your service
+3. Click **"Deployments"** tab
+4. Click the latest deployment
+5. View real-time logs
+
+### What to Look For
+
+**Startup Logs:**
+```
+INFO - Starting application with configuration:
+INFO - PAYMENT_SERVICE_URL: https://api.masumi.network
+INFO - ✅ BLOCKFROST API SUCCESSFULLY INITIALIZED!
+INFO - ✅ Connected to MongoDB successfully
+INFO - Application startup complete
+INFO - Uvicorn running on http://0.0.0.0:8000
+```
+
+**Request Logs (when agent is used):**
+```
+INFO - Received start_job request
+INFO - 🔍 Fetching address info from Blockfrost
+INFO - ✅ REAL BLOCKFROST DATA - First TX: ...
+INFO - ✅ Successfully fetched 25 REAL transactions
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Issue 1: Agent Not Showing on Sokosumi
+
+**Symptoms:**
+- Agent registered but not visible on marketplace
+- `/availability` endpoint works but agent missing
+
+**Solutions:**
+1. Verify `AGENT_IDENTIFIER` matches registration
+2. Check callback URL is correct Railway URL
+3. Test `/availability` returns `agentIdentifier` field
+4. Ensure network matches (preprod vs mainnet)
+
+### Issue 2: Mock Data Instead of Real Blockchain Data
+
+**Symptoms:**
+- Same results for different wallet addresses
+- Logs show "USING MOCK DATA"
+
+**Solutions:**
+1. Add `BLOCKFROST_PROJECT_ID` to Railway variables
+2. Get free API key from https://blockfrost.io/
+3. Ensure `NETWORK` matches Blockfrost project (preprod/mainnet)
+4. Redeploy and check logs for "BLOCKFROST API SUCCESSFULLY INITIALIZED"
+
+### Issue 3: MongoDB Connection Errors
+
+**Symptoms:**
+- Health check fails
+- Logs show "Failed to connect to MongoDB"
+
+**Solutions:**
+1. Verify `MONGO_URL` is correct
+2. Check MongoDB service is running in Railway
+3. Test connection string format:
+   ```
+   mongodb://user:pass@host:port/database
+   ```
+4. Ensure MongoDB allows connections from Railway
+
+### Issue 4: 502 Bad Gateway Errors
+
+**Symptoms:**
+- All endpoints return 502
+- Railway shows app is running
+
+**Solutions:**
+1. Check Railway logs for startup errors
+2. Verify all required environment variables are set
+3. Ensure `API_HOST=0.0.0.0` (not localhost)
+4. Check health endpoint: `/health`
+
+### Issue 5: Logs Not Showing
+
+**Symptoms:**
+- Only see startup logs, not application logs
+
+**Solutions:**
+1. Logs are triggered by requests - make a test request
+2. Use `/docs` endpoint to test API
+3. Check Railway logs immediately after making request
+4. Logs now output to both file and console (already fixed)
+
+---
+
+## 🔄 Updating Your Deployment
+
+### Method 1: Git Push (Automatic)
+
+1. Make changes to your code
+2. Commit and push to GitHub:
+   ```bash
+   git add .
+   git commit -m "Update feature"
+   git push origin main
+   ```
+3. Railway automatically detects and redeploys
+
+### Method 2: Manual Redeploy
+
+1. Go to Railway project
+2. Click your service
+3. Click **"Deployments"**
+4. Click **"Redeploy"** on latest deployment
+
+### Method 3: Environment Variable Change
+
+1. Update variables in Railway
+2. Railway automatically redeploys
+3. Wait for deployment to complete
+
+---
+
+## 📈 Production Checklist
+
+Before going to production:
+
+- [ ] All environment variables set correctly
+- [ ] Blockfrost API key configured (not using mock data)
+- [ ] MongoDB connection working
+- [ ] Health endpoint returns healthy
+- [ ] `/availability` returns correct `agentIdentifier`
+- [ ] Test job creation and payment flow
+- [ ] Agent visible on Sokosumi marketplace
+- [ ] Logs showing real blockchain data
+- [ ] Error handling tested
+- [ ] Rate limits configured (if needed)
+
+---
+
+## 🎯 Next Steps
+
+After successful deployment:
+
+1. **Test Your Agent**: Create a test job on Sokosumi
+2. **Monitor Logs**: Watch Railway logs for any errors
+3. **Verify Results**: Check that real blockchain data is being analyzed
+4. **Scale if Needed**: Railway auto-scales, but monitor performance
+5. **Set Up Alerts**: Configure Railway notifications for errors
+
+---
+
+## 📞 Support
+
+If you encounter issues:
+
+1. Check Railway logs for error messages
+2. Verify all environment variables are set
+3. Test endpoints individually
+4. Review this troubleshooting guide
+5. Check Masumi documentation: https://docs.masumi.network/
+
+---
+
+**Deployment Platform:** Railway  
+**Last Updated:** December 7, 2025  
+**Status:** Production Ready

@@ -1,9 +1,13 @@
+"""
+MongoDB Storage Service
+Handles persistent job storage for RiskLens AI
+"""
 import os
 from typing import Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorClient
-from logging_config import setup_logging
+from core.logging import get_logger
 
-logger = setup_logging()
+logger = get_logger(__name__)
 
 class MongoStore:
     """MongoDB-based job storage for distributed deployment"""
@@ -169,5 +173,4 @@ class MongoStore:
 
 # Global MongoDB store instance
 mongo_store = MongoStore()
-
 

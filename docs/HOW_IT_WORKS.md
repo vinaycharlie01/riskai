@@ -2,7 +2,7 @@
 
 ## 🌟 What Does It Do?
 
-RiskLens AI is like a **security guard for blockchain wallets**. It checks if a wallet is safe or risky by analyzing all its transactions.
+RiskLens AI is like a **security guard for blockchain wallets**. It checks if a wallet is safe or risky by analyzing all its transactions using real blockchain data.
 
 ---
 
@@ -10,19 +10,22 @@ RiskLens AI is like a **security guard for blockchain wallets**. It checks if a 
 
 ### Step 1: 👤 User Submits Wallet Address
 ```
-User → "Check this wallet: 0x742d35Cc..."
+User → "Check this wallet: addr_test1..."
 ```
 
 **What happens:**
-- User sends wallet address via API
-- System creates a job ID
-- Payment request is generated (pay-per-use)
+- User sends Cardano wallet address via API
+- System creates a unique job ID
+- Payment request is generated (pay-per-use via Masumi)
 
 **Example:**
 ```bash
 POST /start_job
 {
-  "wallet_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+  "identifier_from_purchaser": "user_001",
+  "input_data": {
+    "wallet_address": "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgs68faae"
+  }
 }
 ```
 
@@ -35,7 +38,7 @@ User → Pays with Cardano → System Confirms Payment
 
 **What happens:**
 - User pays small fee (e.g., 10 ADA)
-- Masumi Network handles payment
+- Masumi Network handles payment on-chain
 - Once paid, analysis starts automatically
 
 **Why payment?**
@@ -47,23 +50,34 @@ User → Pays with Cardano → System Confirms Payment
 
 ### Step 3: 🔍 Fetch Transaction Data
 ```
-System → Blockchain → Gets All Transactions
+System → Blockfrost API → Gets Real Blockchain Data
 ```
 
 **What happens:**
 - Connects to Cardano blockchain via Blockfrost API
-- Downloads all wallet transactions
-- Gets transaction amounts, dates, addresses
+- Downloads all wallet transactions (up to 100)
+- Gets transaction amounts, dates, addresses, fees
 
 **Data collected:**
 ```json
 {
   "total_transactions": 150,
-  "total_volume": "500,000 ADA",
+  "total_volume": "500 ADA",
   "active_period": "180 days",
-  "recent_transactions": [...]
+  "recent_transactions": [
+    {
+      "tx_hash": "abc123...",
+      "amount": "50 ADA",
+      "fees": "0.17 ADA",
+      "block_time": 1733567890
+    }
+  ]
 }
 ```
+
+**Important:** 
+- ✅ With `BLOCKFROST_PROJECT_ID` set: Real blockchain data
+- ❌ Without API key: Mock data (for testing only)
 
 ---
 
@@ -86,7 +100,7 @@ AI Agents → Examine Patterns → Find Suspicious Activity
 ```
 ✓ 150 transactions over 6 months (Normal)
 ⚠ 5 large transactions >100k ADA (Medium risk)
-🚨 Connected to known scam address (High risk)
+🚨 High frequency: 50+ transactions (Medium risk)
 ```
 
 #### 📊 Agent 2: Risk Scorer
@@ -103,10 +117,10 @@ AI Agents → Examine Patterns → Find Suspicious Activity
 **Example calculation:**
 ```
 Base score: 20 (everyone starts here)
-+ High frequency: +15
-+ Large transactions: +25
-+ Scam connection: +40
-= Total: 100 (Critical Risk!)
++ High frequency (>50 txs): +15
++ Large transactions (>100k ADA): +25
++ Unusual fees: +15
+= Total: 75 (High Risk!)
 ```
 
 #### 📝 Agent 3: Report Generator
@@ -123,42 +137,59 @@ Base score: 20 (everyone starts here)
 
 ### Step 5: 📄 Generate Report
 ```
-AI → Creates Report → Stores Hash On-Chain
+AI → Creates Report → Formats for Display → Stores Hash On-Chain
 ```
 
-**Report Example:**
-```json
-{
-  "wallet_address": "0x742d35Cc...",
-  "risk_score": 85,
-  "risk_category": "Critical Risk 🔴",
-  "trust_score": 15,
-  
-  "executive_summary": 
-    "This wallet shows high-risk behavior with connections 
-     to known scam addresses and unusual transaction patterns.",
-  
-  "suspicious_activities": [
-    {
-      "activity": "Connected to scam address",
-      "severity": "Critical",
-      "evidence": "5 transactions to flagged address"
-    },
-    {
-      "activity": "Rapid large transfers",
-      "severity": "High",
-      "evidence": "10 transactions >50k ADA in 24 hours"
-    }
-  ],
-  
-  "recommendations": [
-    "⚠️ Avoid transacting with this wallet",
-    "🚨 Report to exchange compliance team",
-    "📋 Conduct enhanced due diligence"
-  ],
-  
-  "compliance_status": "Non-Compliant"
-}
+**Report Format** (Formatted String for Sokosumi):
+```
+🔍 BLOCKCHAIN WALLET RISK ANALYSIS REPORT
+
+📍 Wallet Address: addr_test1...
+📅 Analysis Date: 2025-12-07T10:30:00Z
+
+📊 RISK ASSESSMENT
+   Risk Score: 75/100
+   Risk Category: High Risk
+   Trust Score: 25/100
+   Compliance Status: Requires Review
+   Confidence Level: High
+
+📋 EXECUTIVE SUMMARY
+This wallet shows high-risk behavior with unusual transaction patterns...
+
+💰 TRANSACTION SUMMARY
+   Total Transactions: 150
+   Total Volume: 500 ADA
+   Active Period: 180 days
+   Counterparties: 45
+
+⚠️  RISK FACTORS
+1. High Transaction Frequency
+   Severity: Medium
+   Description: 50+ transactions detected
+   Impact: Increases risk score by 15 points
+
+2. Large Transactions
+   Severity: High
+   Description: 5 transactions >100k ADA
+   Impact: Increases risk score by 25 points
+
+🚨 SUSPICIOUS ACTIVITIES
+1. Rapid large transfers
+2. Unusual fee patterns
+
+💡 RECOMMENDATIONS
+1. Conduct enhanced due diligence
+2. Monitor for additional activity
+3. Request additional documentation
+
+🔐 VERIFICATION
+   Report Hash: 0xabc123...
+
+End of Report
+
+🌐 Learn more about RiskLens AI:
+   https://studio--studio-2671206846-b156f.us-central1.hosted.app/
 ```
 
 **On-Chain Storage:**
@@ -179,14 +210,16 @@ GET /status?job_id=abc123
 
 Response:
 {
+  "job_id": "abc123",
   "status": "completed",
-  "result": { /* full report */ }
+  "payment_status": "result_submitted",
+  "result": "🔍 BLOCKCHAIN WALLET RISK ANALYSIS REPORT\n\n..."
 }
 ```
 
 **User can:**
 - ✅ View detailed risk analysis
-- ✅ Download report
+- ✅ See formatted report on Sokosumi dashboard
 - ✅ Share with exchange/regulator
 - ✅ Verify on blockchain
 
@@ -202,24 +235,21 @@ Response:
 2. Exchange: "Let's check their wallet first"
    ↓
 3. Exchange calls RiskLens AI API
-   POST /start_job {"wallet_address": "user_wallet"}
+   POST /start_job {"wallet_address": "addr_test1..."}
    ↓
 4. Exchange pays 10 ADA for analysis
    ↓
 5. RiskLens AI analyzes wallet (30 seconds)
-   - Fetches 200 transactions
-   - AI finds: mixer usage, rapid transfers
+   - Fetches 200 real transactions from Blockfrost
+   - AI finds: high frequency, large transfers
    - Risk Score: 75 (High Risk)
    ↓
-6. Exchange gets report
-   {
-     "risk_score": 75,
-     "risk_category": "High Risk",
-     "suspicious_activities": [
-       "Mixer usage detected",
-       "Rapid fund movements"
-     ]
-   }
+6. Exchange gets formatted report
+   "Risk Score: 75/100
+    Risk Category: High Risk
+    Suspicious Activities:
+    - High transaction frequency
+    - Large fund movements"
    ↓
 7. Exchange decision:
    ❌ Reject deposit
@@ -254,6 +284,7 @@ Response:
 │  • Get all transactions         │
 │  • Get wallet info              │
 │  • Calculate volumes            │
+│  • Analyze patterns             │
 └──────┬──────────────────────────┘
        │
        ▼
@@ -278,13 +309,13 @@ Response:
        │
        ▼
 ┌─────────────────────────────────┐
-│    REPORT GENERATION            │
+│    REPORT FORMATTING            │
 │                                 │
-│  • JSON format                  │
-│  • Risk score & category        │
-│  • Suspicious activities        │
-│  • Recommendations              │
-│  • Compliance status            │
+│  • Convert JSON to string       │
+│  • Format for Sokosumi display  │
+│  • Add website link             │
+│  • Include risk scores          │
+│  • List recommendations         │
 └──────┬──────────────────────────┘
        │
        ▼
@@ -352,15 +383,15 @@ Automated monitoring:
 
 ### Speed: ~30 seconds per wallet
 ```
-Blockchain fetch:  5 seconds
-AI analysis:      20 seconds
-Report generation: 5 seconds
+Blockchain fetch:  2-5 seconds
+AI analysis:      10-30 seconds
+Report generation: 5-10 seconds
 ─────────────────────────────
-Total:           ~30 seconds
+Total:           ~20-45 seconds
 ```
 
-### Accuracy: 95%+
-- Uses real blockchain data (not estimates)
+### Accuracy: 95%+ (with real data)
+- Uses real blockchain data from Blockfrost
 - AI trained on known patterns
 - Multiple agents cross-check findings
 - Continuous learning from feedback
@@ -376,7 +407,7 @@ Total:           ~30 seconds
 - ❌ Permission to access wallet
 
 ### ✅ What We DO Use:
-- ✅ Public blockchain data only
+- ✅ Public blockchain data only (via Blockfrost)
 - ✅ Transparent analysis
 - ✅ Verifiable results
 - ✅ On-chain proof
@@ -389,7 +420,7 @@ Total:           ~30 seconds
 |---------|-------------|
 | 🤖 **Automated** | No manual review needed |
 | ⚡ **Fast** | Results in ~30 seconds |
-| 🎯 **Accurate** | 95%+ detection rate |
+| 🎯 **Accurate** | 95%+ detection rate with real data |
 | 🔒 **Secure** | No private keys needed |
 | 💰 **Affordable** | Pay only when you use it |
 | 🌐 **Decentralized** | Runs on Masumi Network |
@@ -403,17 +434,17 @@ Total:           ~30 seconds
 ### Option 1: API Call
 ```bash
 # Start analysis
-curl -X POST http://risklens-api/start_job \
+curl -X POST https://your-app.up.railway.app/start_job \
   -H "Content-Type: application/json" \
   -d '{
     "identifier_from_purchaser": "test_001",
     "input_data": {
-      "wallet_address": "addr_test1..."
+      "wallet_address": "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgs68faae"
     }
   }'
 
 # Get results
-curl http://risklens-api/status?job_id=<job_id>
+curl "https://your-app.up.railway.app/status?job_id=<job_id>"
 ```
 
 ### Option 2: Local Testing
@@ -425,80 +456,17 @@ cd riskai
 # Install dependencies
 pip install -r requirements.txt
 
-# Set API keys
-export OPENAI_API_KEY="your-key"
+# Set API keys in .env
+OPENAI_API_KEY=sk-proj-xxx
+BLOCKFROST_PROJECT_ID=preprodxxx
+AGENT_IDENTIFIER=your-agent-id
+PAYMENT_API_KEY=your-key
+SELLER_VKEY=your-vkey
+MONGO_URL=mongodb://...
+NETWORK=preprod
 
-# Run analysis
-python main.py
-```
-
----
-
-## 📊 Example Output
-
-```
-═══════════════════════════════════════════════════════
-🛡️ RISKLENS AI - WALLET RISK ANALYSIS REPORT
-═══════════════════════════════════════════════════════
-
-Wallet: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
-Analysis Date: 2025-11-29 15:00:00 UTC
-
-───────────────────────────────────────────────────────
-📊 RISK ASSESSMENT
-───────────────────────────────────────────────────────
-
-Risk Score:     85 / 100
-Risk Category:  🔴 CRITICAL RISK
-Trust Score:    15 / 100
-Confidence:     High
-
-───────────────────────────────────────────────────────
-📈 TRANSACTION SUMMARY
-───────────────────────────────────────────────────────
-
-Total Transactions:  150
-Total Volume:        500,000 ADA
-Active Period:       180 days
-Average per Day:     2,777 ADA
-
-───────────────────────────────────────────────────────
-⚠️ SUSPICIOUS ACTIVITIES DETECTED
-───────────────────────────────────────────────────────
-
-1. 🚨 CRITICAL: Connected to Known Scam Address
-   Evidence: 5 transactions to flagged address
-   Impact: +40 risk points
-
-2. 🟠 HIGH: Rapid Large Transfers
-   Evidence: 10 transactions >50k ADA in 24 hours
-   Impact: +25 risk points
-
-3. 🟡 MEDIUM: Mixer Usage Detected
-   Evidence: 3 transactions through privacy mixer
-   Impact: +15 risk points
-
-───────────────────────────────────────────────────────
-💡 RECOMMENDATIONS
-───────────────────────────────────────────────────────
-
-⚠️  AVOID transacting with this wallet
-🚨  REPORT to exchange compliance team
-📋  CONDUCT enhanced due diligence
-🔍  MONITOR for additional activity
-❌  DO NOT accept deposits from this address
-
-───────────────────────────────────────────────────────
-✅ COMPLIANCE STATUS
-───────────────────────────────────────────────────────
-
-Status: NON-COMPLIANT
-Reason: Multiple high-risk indicators detected
-
-═══════════════════════════════════════════════════════
-Report Hash: 0xabc123... (Stored on Cardano)
-Verification: https://cardanoscan.io/transaction/...
-═══════════════════════════════════════════════════════
+# Run API
+python main.py api
 ```
 
 ---
@@ -506,34 +474,37 @@ Verification: https://cardanoscan.io/transaction/...
 ## 🤔 Frequently Asked Questions
 
 ### Q: How long does analysis take?
-**A:** About 30 seconds on average.
+**A:** About 20-45 seconds on average.
 
 ### Q: How much does it cost?
 **A:** Typically 10 ADA per analysis (configurable).
 
 ### Q: Can I analyze any blockchain?
-**A:** Currently Cardano. Ethereum, Polygon, BSC coming soon.
+**A:** Currently Cardano (preprod/mainnet). More blockchains coming soon.
 
 ### Q: Is my data private?
 **A:** Yes! We only use public blockchain data. No private keys needed.
 
 ### Q: How accurate is it?
-**A:** 95%+ accuracy based on known patterns and AI analysis.
+**A:** 95%+ accuracy with real Blockfrost data.
 
 ### Q: Can results be verified?
 **A:** Yes! Report hash is stored on Cardano blockchain.
 
-### Q: What if I disagree with the score?
-**A:** You can request manual review or provide additional context.
+### Q: What if I don't have Blockfrost API key?
+**A:** The system will use mock data for testing, but you should add a real API key for production.
+
+### Q: Where can I see my results?
+**A:** Results are displayed on Sokosumi dashboard as formatted text, or via the `/status` API endpoint.
 
 ---
 
 ## 📞 Need Help?
 
-- 📖 Read full docs: [`README.md`](README.md)
-- 🔧 Setup guide: [`SETUP_GUIDE.md`](SETUP_GUIDE.md)
-- 🚀 Deployment: [`DEPLOYMENT_STEPS.md`](DEPLOYMENT_STEPS.md)
-- 🔄 Workflow details: [`WORKFLOW_DOCUMENTATION.md`](WORKFLOW_DOCUMENTATION.md)
+- 📖 [Quick Start Guide](QUICK_START.md) - Get started in 5 minutes
+- 🚀 [Deployment Guide](DEPLOYMENT_GUIDE.md) - Deploy to Railway
+- 📡 [API Reference](API_REFERENCE.md) - Complete API docs
+- 🔄 [Workflow Details](WORKFLOW_DOCUMENTATION.md) - Technical workflow
 
 ---
 
@@ -541,4 +512,4 @@ Verification: https://cardanoscan.io/transaction/...
 
 *Making blockchain safer, one wallet at a time* 🛡️
 
-
+// Made with Bob

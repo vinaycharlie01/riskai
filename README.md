@@ -1,6 +1,5 @@
 # 🛡️ RiskLens AI - Blockchain Compliance & Risk Scoring Agent
 
-
 **Team X07** | **Leader: Vinay** | **Cardano Hackathon**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -17,11 +16,13 @@ RiskLens AI is an **autonomous AI agent** that analyzes blockchain wallet activi
 ### 🌟 Key Features
 
 - ✅ **AI-Powered Analysis** - Multi-agent system using GPT-4
+- ✅ **Real Blockchain Data** - Blockfrost API integration for Cardano
 - ✅ **Risk Scoring** - 0-100 risk scores with clear categories
 - ✅ **Suspicious Pattern Detection** - Identifies scams, mixers, and anomalies
 - ✅ **On-Chain Reports** - Tamper-proof results on Cardano blockchain
 - ✅ **Pay-Per-Use** - Decentralized payment via Masumi Network
-- ✅ **Fast & Accurate** - Results in ~30 seconds with 95%+ accuracy
+- ✅ **Fast & Accurate** - Results in ~30 seconds
+- ✅ **MIP-003 Compliant** - Standard Masumi agent protocol
 - ✅ **Easy Integration** - Simple REST API
 
 ---
@@ -42,11 +43,17 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure
-cp .env.example .env
-# Edit .env with your API keys
+# Configure environment variables
+# Create .env file with:
+# - OPENAI_API_KEY
+# - BLOCKFROST_PROJECT_ID
+# - AGENT_IDENTIFIER
+# - PAYMENT_API_KEY
+# - SELLER_VKEY
+# - MONGO_URL
+# - NETWORK=preprod
 
-# Run
+# Run locally
 python main.py api
 ```
 
@@ -59,20 +66,14 @@ Visit `http://localhost:8000/docs` for interactive API documentation.
 ### 🎓 Getting Started
 - **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in 5 minutes
 - **[How It Works](docs/HOW_IT_WORKS.md)** - Simple explanation with examples
-- **[Setup Guide](docs/SETUP_GUIDE.md)** - Detailed installation and configuration
 
-### 🏗️ Architecture & Design
+### 🏗️ Architecture & Technical
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design and components
 - **[Workflow Documentation](docs/WORKFLOW_DOCUMENTATION.md)** - Complete workflow breakdown
-- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- **[API Reference](docs/API_REFERENCE.md)** - MIP-003 compliant API documentation
 
 ### 🚢 Deployment
-- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Production deployment steps
-- **[Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md)** - K8s specific guide
-- **[Masumi Integration](docs/MASUMI_INTEGRATION.md)** - Payment setup guide
-
-### 💻 Development
-- **[Code Review](docs/CODE_REVIEW.md)** - Code quality analysis and recommendations
+- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Railway deployment steps
 
 📖 **[View All Documentation](docs/README.md)**
 
@@ -125,8 +126,8 @@ Visit `http://localhost:8000/docs` for interactive API documentation.
 2. Pay with Cardano (via Masumi)
    ↓
 3. AI Analyzes Transactions
-   ├─ Fetch blockchain data
-   ├─ Detect patterns
+   ├─ Fetch real blockchain data (Blockfrost)
+   ├─ Detect patterns with AI agents
    └─ Calculate risk score
    ↓
 4. Generate Report
@@ -136,10 +137,10 @@ Visit `http://localhost:8000/docs` for interactive API documentation.
    ↓
 5. Store On-Chain
    ↓
-6. Receive Results
+6. Receive Results (formatted string)
 ```
 
-**Time:** ~30 seconds | **Accuracy:** 95%+ | **Cost:** 10 ADA per analysis
+**Time:** ~30 seconds | **Cost:** 10 ADA per analysis
 
 See [How It Works](docs/HOW_IT_WORKS.md) for detailed explanation.
 
@@ -149,10 +150,11 @@ See [How It Works](docs/HOW_IT_WORKS.md) for detailed explanation.
 
 - **AI Framework:** CrewAI with OpenAI GPT-4
 - **Backend:** FastAPI (Python 3.12+)
-- **Payment:** Masumi Network
+- **Payment:** Masumi Network (MIP-003)
 - **Blockchain:** Cardano (Preprod/Mainnet)
 - **Data Source:** Blockfrost API
-- **Deployment:** Docker + Kubernetes
+- **Database:** MongoDB (Motor async driver)
+- **Deployment:** Railway, Kubernetes with Helm
 
 ---
 
@@ -161,12 +163,12 @@ See [How It Works](docs/HOW_IT_WORKS.md) for detailed explanation.
 ### Start Analysis
 
 ```bash
-curl -X POST http://localhost:8000/start_job \
+curl -X POST https://your-app.up.railway.app/start_job \
   -H "Content-Type: application/json" \
   -d '{
     "identifier_from_purchaser": "user_001",
     "input_data": {
-      "wallet_address": "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwq2ytjqp"
+      "wallet_address": "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgs68faae"
     }
   }'
 ```
@@ -174,7 +176,7 @@ curl -X POST http://localhost:8000/start_job \
 ### Check Status
 
 ```bash
-curl "http://localhost:8000/status?job_id=<job_id>"
+curl "https://your-app.up.railway.app/status?job_id=<job_id>"
 ```
 
 ![alt text](image.png)
@@ -187,14 +189,8 @@ curl "http://localhost:8000/status?job_id=<job_id>"
 {
   "job_id": "abc-123",
   "status": "completed",
-  "result": {
-    "risk_score": 25,
-    "risk_category": "Low Risk",
-    "trust_score": 75,
-    "executive_summary": "Wallet shows normal activity...",
-    "recommendations": ["Continue standard monitoring"],
-    "compliance_status": "Compliant"
-  }
+  "payment_status": "result_submitted",
+  "result": "🔍 BLOCKCHAIN WALLET RISK ANALYSIS REPORT\n\n📍 Wallet Address: addr_test1...\n📅 Analysis Date: 2025-12-07T10:30:00Z\n\n📊 RISK ASSESSMENT\n   Risk Score: 25/100\n   Risk Category: Low Risk\n   Trust Score: 75/100\n   Compliance Status: Compliant\n..."
 }
 ```
 
@@ -202,41 +198,25 @@ See [API Reference](docs/API_REFERENCE.md) for complete documentation.
 
 ---
 
-## 🐳 Docker Deployment
+## 🚀 Railway Deployment
 
 ```bash
-# Build
-docker build -t risklens-ai:latest .
+# 1. Push to GitHub
+git push origin main
 
-# Run
-docker run -p 8000:8000 \
-  -e OPENAI_API_KEY="your-key" \
-  -e PAYMENT_API_KEY="your-key" \
-  -e AGENT_IDENTIFIER="your-id" \
-  -e SELLER_VKEY="your-vkey" \
-  risklens-ai:latest
+# 2. Create Railway project
+# - Connect GitHub repository
+# - Add MongoDB service
+# - Configure environment variables
+
+# 3. Deploy automatically
+# Railway will build and deploy your app
+
+# 4. Get your public URL
+# https://your-app.up.railway.app
 ```
 
----
-
-## ☸️ Kubernetes Deployment
-
-```bash
-# Create secrets
-kubectl create secret generic masumi-secrets \
-  --from-literal=openai_api_key='your-key' \
-  --from-literal=payment_api_key='your-key' \
-  --from-literal=agent_identifier='your-id' \
-  --from-literal=seller_vkey='your-vkey'
-
-# Deploy
-kubectl apply -f deploy.yaml
-
-# Check status
-kubectl get pods -l app=python-api
-```
-
-See [Kubernetes Deployment Guide](docs/KUBERNETES_DEPLOYMENT.md) for details.
+See [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for detailed steps.
 
 ---
 
@@ -253,9 +233,11 @@ See [Kubernetes Deployment Guide](docs/KUBERNETES_DEPLOYMENT.md) for details.
 ## 📈 Roadmap
 
 - [x] Core risk analysis engine
-- [x] Masumi Network integration
-- [x] Basic compliance reporting
-- [x] Cardano blockchain support
+- [x] Masumi Network integration (MIP-003)
+- [x] Real blockchain data (Blockfrost)
+- [x] MongoDB distributed storage
+- [x] Railway deployment
+- [x] Kubernetes Helm charts
 - [ ] Multi-blockchain support (Ethereum, Polygon, BSC)
 - [ ] Real-time transaction monitoring
 - [ ] Machine learning model training
@@ -273,8 +255,6 @@ We welcome contributions! Please:
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
-
-See our [Development Guide](docs/CODE_REVIEW.md) for code standards.
 
 ---
 
@@ -297,9 +277,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Need help?
 
 - 📖 [Documentation](docs/README.md)
-- 🐛 [Report Issues](https://github.com/your-repo/issues)
-- 💬 Community Chat
-- 📧 Email: support@risklens.ai
+- 🚀 [Quick Start](docs/QUICK_START.md)
+- 🚢 [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- 📡 [API Reference](docs/API_REFERENCE.md)
 
 ---
 
@@ -310,17 +290,17 @@ Need help?
 - **OpenAI** - GPT-4 AI capabilities
 - **Cardano** - Blockchain infrastructure
 - **Blockfrost** - Blockchain API
+- **Railway** - Deployment platform
 
 ---
 
 ## 📊 Project Stats
 
-- **Lines of Code:** ~866
-- **API Endpoints:** 5
-- **AI Agents:** 3
+- **API Endpoints:** 6 (MIP-003 compliant)
+- **AI Agents:** 3 (Transaction Analyzer, Risk Scorer, Compliance Reporter)
 - **Supported Blockchains:** 1 (Cardano)
 - **Average Analysis Time:** 30 seconds
-- **Accuracy:** 95%+
+- **Deployment:** Railway + Kubernetes
 
 ---
 
@@ -343,4 +323,4 @@ Need help?
 
 If you find RiskLens AI useful, please give us a star on GitHub! It helps us grow and improve.
 
-[![GitHub stars](https://img.shields.io/github/stars/your-repo/risklens-ai.svg?style=social&label=Star)](https://github.com/your-repo/risklens-ai)
+// Made with Bob
