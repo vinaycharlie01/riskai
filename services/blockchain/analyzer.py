@@ -4,7 +4,7 @@ Fetches real transaction data from Cardano blockchain
 """
 import os
 from typing import Dict, List, Any
-from blockfrost import BlockFrostApi, ApiError
+from blockfrost import BlockFrostApi, ApiError, ApiUrls
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -27,11 +27,17 @@ class BlockchainAnalyzer:
             self.api = None
         else:
             try:
+                # Use the correct ApiUrls enum
+                if network == "mainnet":
+                    base_url = ApiUrls.mainnet.value
+                else:
+                    base_url = ApiUrls.preprod.value
+                
                 self.api = BlockFrostApi(
                     project_id=project_id,
-                    base_url=f"https://cardano-{network}.blockfrost.io/api/v0"
+                    base_url=base_url
                 )
-                logger.info(f"Blockfrost API initialized for {network}")
+                logger.info(f"Blockfrost API initialized for {network} ({base_url})")
             except Exception as e:
                 logger.error(f"Failed to initialize Blockfrost: {e}")
                 self.api = None
@@ -45,12 +51,15 @@ class BlockchainAnalyzer:
             info = self.api.address(address)
             return {
                 "address": address,
-                "stake_address": info.stake_address,
-                "type": info.type,
-                "script": info.script
+                "stake_address": info.stake_address if hasattr(info, 'stake_address') else None,
+                "type": info.type if hasattr(info, 'type') else "unknown",
+                "script": info.script if hasattr(info, 'script') else False
             }
         except ApiError as e:
-            logger.error(f"Error fetching address info: {e}")
+            logger.warning(f"Blockfrost API error for address {address[:10]}...: {e.message}")
+            return self._mock_address_info(address)
+        except Exception as e:
+            logger.error(f"Unexpected error fetching address info: {str(e)}")
             return self._mock_address_info(address)
     
     def get_transactions(self, address: str, count: int = 100) -> List[Dict[str, Any]]:
@@ -62,22 +71,29 @@ class BlockchainAnalyzer:
             txs = self.api.address_transactions(address, count=count, order='desc')
             
             transactions = []
-            for tx in txs:
-                tx_details = self.api.transaction(tx.tx_hash)
-                transactions.append({
-                    "tx_hash": tx.tx_hash,
-                    "block_height": tx.block_height,
-                    "block_time": tx.block_time,
-                    "output_amount": sum([int(out.amount[0].quantity) for out in tx_details.outputs]),
-                    "fees": int(tx_details.fees),
-                    "size": tx_details.size
-                })
+            for tx in txs[:min(len(txs), count)]:
+                try:
+                    tx_details = self.api.transaction(tx.tx_hash)
+                    transactions.append({
+                        "tx_hash": tx.tx_hash,
+                        "block_height": tx.block_height,
+                        "block_time": tx.block_time,
+                        "output_amount": sum([int(out.amount[0].quantity) for out in tx_details.outputs]) if hasattr(tx_details, 'outputs') else 0,
+                        "fees": int(tx_details.fees) if hasattr(tx_details, 'fees') else 0,
+                        "size": tx_details.size if hasattr(tx_details, 'size') else 0
+                    })
+                except Exception as tx_error:
+                    logger.warning(f"Error processing transaction {tx.tx_hash}: {str(tx_error)}")
+                    continue
             
-            logger.info(f"Fetched {len(transactions)} transactions for {address}")
+            logger.info(f"Fetched {len(transactions)} transactions for {address[:10]}...")
             return transactions
             
         except ApiError as e:
-            logger.error(f"Error fetching transactions: {e}")
+            logger.warning(f"Blockfrost API error for transactions: {e.message}")
+            return self._mock_transactions(address, count)
+        except Exception as e:
+            logger.error(f"Unexpected error fetching transactions: {str(e)}")
             return self._mock_transactions(address, count)
     
     def analyze_transaction_patterns(self, transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -114,14 +130,15 @@ class BlockchainAnalyzer:
             })
         
         # Check for unusual patterns (very small or very large fees)
-        avg_fee = sum(tx["fees"] for tx in transactions) / len(transactions)
-        unusual_fees = [tx for tx in transactions if tx["fees"] > avg_fee * 3 or tx["fees"] < avg_fee * 0.3]
-        if len(unusual_fees) > len(transactions) * 0.2:  # More than 20% unusual
-            risk_indicators.append({
-                "type": "unusual_fees",
-                "severity": "medium",
-                "description": f"Unusual fee patterns detected in {len(unusual_fees)} transactions"
-            })
+        avg_fee = sum(tx["fees"] for tx in transactions) / len(transactions) if transactions else 0
+        if avg_fee > 0:
+            unusual_fees = [tx for tx in transactions if tx["fees"] > avg_fee * 3 or tx["fees"] < avg_fee * 0.3]
+            if len(unusual_fees) > len(transactions) * 0.2:  # More than 20% unusual
+                risk_indicators.append({
+                    "type": "unusual_fees",
+                    "severity": "medium",
+                    "description": f"Unusual fee patterns detected in {len(unusual_fees)} transactions"
+                })
         
         return {
             "total_transactions": len(transactions),
@@ -163,6 +180,7 @@ class BlockchainAnalyzer:
     
     def _mock_address_info(self, address: str) -> Dict[str, Any]:
         """Mock address info for testing"""
+        logger.info(f"Using mock data for address {address[:10]}...")
         return {
             "address": address,
             "stake_address": "stake_test1...",
@@ -186,7 +204,7 @@ class BlockchainAnalyzer:
                 "size": 300 + (i * 10)
             })
         
-        logger.info(f"Generated {len(transactions)} mock transactions")
+        logger.info(f"Generated {len(transactions)} mock transactions for {address[:10]}...")
         return transactions
 
 def get_blockchain_data(wallet_address: str) -> Dict[str, Any]:
@@ -222,3 +240,4 @@ def get_blockchain_data(wallet_address: str) -> Dict[str, Any]:
         "transaction_count": len(transactions)
     }
 
+# Made with Bob

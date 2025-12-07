@@ -3,7 +3,7 @@ Masumi Payment Service
 Handles payment creation, monitoring, and completion
 """
 import uuid
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
 from masumi.config import Config
 from masumi.payment import Payment
 
@@ -18,13 +18,18 @@ class MasumiPaymentService:
     
     def __init__(self):
         """Initialize Masumi payment service"""
-        self.config = Config(
-            payment_service_url=settings.payment_service_url,
-            payment_api_key=settings.payment_api_key
-        )
-        # Store payment instances per job (pod-local)
+        self.config: Optional[Config] = None
         self.payment_instances: Dict[str, Payment] = {}
         logger.info("MasumiPaymentService initialized")
+    
+    def _ensure_config(self):
+        """Lazy-load config when first needed"""
+        if self.config is None:
+            self.config = Config(
+                payment_service_url=settings.payment_service_url,
+                payment_api_key=settings.payment_api_key
+            )
+            logger.info("Masumi config initialized")
     
     async def create_payment_request(
         self,
@@ -43,6 +48,7 @@ class MasumiPaymentService:
         Returns:
             Payment request data including blockchain identifier
         """
+        self._ensure_config()
         logger.info(f"Creating payment request for job {job_id}")
         
         # Create payment instance
@@ -164,4 +170,3 @@ class MasumiPaymentService:
 
 # Global payment service instance
 payment_service = MasumiPaymentService()
-
