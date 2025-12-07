@@ -179,9 +179,9 @@ curl -X POST https://your-app.up.railway.app/start_job \
 curl "https://your-app.up.railway.app/status?job_id=<job_id>"
 ```
 
-![alt text](image.png)
+![Image1](images/image2.png)
+![Image2](images/image.png)
 
-![alt text](image2.png)
 
 ### Response
 

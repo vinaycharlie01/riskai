@@ -581,5 +581,3 @@ For questions about the workflow:
 **Built with ❤️ by Team X07 for the Cardano Hackathon**
 
 *Last Updated: December 7, 2025*
-
-// Made with Bob

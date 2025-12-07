@@ -240,4 +240,3 @@ def get_blockchain_data(wallet_address: str) -> Dict[str, Any]:
         "transaction_count": len(transactions)
     }
 
-# Made with Bob
