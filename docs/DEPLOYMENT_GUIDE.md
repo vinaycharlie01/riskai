@@ -11,9 +11,14 @@ Before deploying, ensure you have:
 1. **Railway Account**: Sign up at https://railway.app/
 2. **GitHub Repository**: Your code pushed to GitHub
 3. **Blockfrost API Key**: Get from https://blockfrost.io/ (free tier available)
-4. **Masumi Agent Registration**: Register at https://sokosumi.com/
+4. **Masumi Setup**:
+   - Admin Panel: https://masumi-payment-service-production-fe94.up.railway.app/admin/
+   - Create API Key and register AI agent
+   - Preprod Sokosumi (for testing): https://preprod.sokosumi.com/agents
+   - Production Sokosumi: https://app.sokosumi.com/agents
 5. **MongoDB Database**: Railway MongoDB or MongoDB Atlas
 6. **OpenAI API Key**: For AI analysis (https://platform.openai.com/)
+7. **Test ADA (Preprod)**: Get free tADA from https://dispenser.masumi.network/
 
 ---
 
@@ -47,12 +52,13 @@ In Railway, go to your service → **Variables** tab and add:
 #### Required Variables
 
 ```bash
-# Masumi Integration (from agent registration)
+# Masumi Integration
+# Get from: https://masumi-payment-service-production-fe94.up.railway.app/admin/
 AGENT_IDENTIFIER=your_agent_identifier_here
-PAYMENT_SERVICE_URL=https://api.masumi.network
+PAYMENT_SERVICE_URL=https://masumi-payment-service-production-fe94.up.railway.app/api/v1
 PAYMENT_API_KEY=your_masumi_api_key
 SELLER_VKEY=your_seller_verification_key
-NETWORK=preprod
+NETWORK=Preprod
 
 # Blockchain Data (from Blockfrost)
 BLOCKFROST_PROJECT_ID=preprodxxxxxxxxxxxxxxxxxxxxx
@@ -64,6 +70,11 @@ MONGO_DB=risklens_ai
 # OpenAI (for AI analysis)
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxx
 ```
+
+**Important Notes:**
+- `NETWORK` must be capitalized: `Preprod` or `Mainnet` (not lowercase)
+- `PAYMENT_SERVICE_URL` should point to the Masumi payment service API
+- Get API key from Masumi admin panel, not Sokosumi
 
 #### Optional Variables
 
@@ -111,14 +122,29 @@ curl https://your-app-name.up.railway.app/input_schema
 curl https://your-app-name.up.railway.app/health
 ```
 
-### Step 6: Register with Sokosumi
+### Step 6: Register Agent with Masumi
 
-1. Go to https://sokosumi.com/
-2. Register your agent with:
+**For Testing (Preprod):**
+1. Go to https://masumi-payment-service-production-fe94.up.railway.app/admin/
+2. Create an API key
+3. Register your AI agent with:
    - **Callback URL**: `https://your-app-name.up.railway.app`
-   - **Agent Identifier**: Same as `AGENT_IDENTIFIER` env var
-   - **Network**: `preprod` or `mainnet`
-3. Your agent should now appear on Sokosumi marketplace!
+   - **Agent Identifier**: Copy the generated identifier
+   - **Network**: `Preprod`
+   - **Pricing**: Set price (minimum 1 ADA, or use USDM for preprod testing)
+4. Copy the `AGENT_IDENTIFIER`, `PAYMENT_API_KEY`, and `SELLER_VKEY`
+5. Add them to Railway environment variables
+
+**For Testing Payments:**
+- Get free tADA: https://dispenser.masumi.network/
+- Test on Preprod Sokosumi: https://preprod.sokosumi.com/agents
+- Use credit card `4242 4242 4242 4242` (any CVV, future expiration) for free testing credits
+
+**For Production:**
+- Register on: https://app.sokosumi.com/agents
+- Use `NETWORK=Mainnet`
+
+- Set real pricing in ADA
 
 ---
 
@@ -298,15 +324,34 @@ After successful deployment:
 
 ---
 
-## 📞 Support
+## 📞 Support & Resources
+
+### Masumi Support
+
+**Community:**
+- Telegram: https://t.me/+FtkeBaITmjlkZDky
+- Discord: https://discord.gg/WVDHxZQdzp
+
+**Documentation:**
+- Masumi Docs: https://docs.masumi.network/
+- Installation Guide: https://docs.masumi.network/documentation/get-started/installation
+- CrewAI Quickstart: https://github.com/masumi-network/crewai-masumi-quickstart-template
+
+### Testing Resources
+
+- **tADA Faucet**: https://dispenser.masumi.network/
+- **Preprod Sokosumi**: https://preprod.sokosumi.com/agents
+- **Admin Panel**: https://masumi-payment-service-production-fe94.up.railway.app/admin/
+
+### Troubleshooting
 
 If you encounter issues:
 
 1. Check Railway logs for error messages
-2. Verify all environment variables are set
+2. Verify all environment variables are set (especially `NETWORK=Preprod` with capital P)
 3. Test endpoints individually
 4. Review this troubleshooting guide
-5. Check Masumi documentation: https://docs.masumi.network/
+5. Join Masumi community for help
 
 ---
 
